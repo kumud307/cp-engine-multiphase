@@ -1,0 +1,290 @@
+{
+  "_meta": {
+    "description": "Binary interaction data: NRTL parameters, liquid miscibility flags and solid solubility data.",
+    "nrtl_form": "tau_ij = a_ij + b_ij/T + e_ij ln(T) + f_ij T ;  G_ij = exp(-alpha_ij tau_ij) ;  alpha_ij = c_ij + d_ij (T - 273.15 K)  (Aspen Plus NRTL form; T in K)",
+    "warning": "All NRTL sets below were regressed to VLE data. VLE-fitted parameters reproduce G^E but usually NOT its temperature derivatives (H^E, Cp^E). Use cp_engine.models.nrtl.fit_nrtl_to_excess() to refit to H^E / Cp^E data when available."
+  },
+  "nrtl": [
+    {
+      "i": "ethanol",
+      "j": "water",
+      "a_ij": -0.8009,
+      "a_ji": 3.4578,
+      "b_ij": 246.18,
+      "b_ji": -586.0809,
+      "e_ij": 0.0,
+      "e_ji": 0.0,
+      "f_ij": 0.0,
+      "f_ji": 0.0,
+      "c": 0.3,
+      "d": 0.0,
+      "Tmin": 293.15,
+      "Tmax": 373.15,
+      "T_range_note": "ASSUMED range (typical isobaric VLE data); check the original regression range",
+      "fitted_to": "VLE",
+      "source": "Aspen Plus databank (NRTL, regressed from Dortmund Data Bank VLE data); same values tabulated in BIT Mesra CAPE phase-equilibria notes; values and orientation confirmed against the published table (2026-11-02)",
+      "verify": false
+    },
+    {
+      "i": "methanol",
+      "j": "water",
+      "a_ij": -0.693,
+      "a_ji": 2.7322,
+      "b_ij": 172.987,
+      "b_ji": -617.2687,
+      "e_ij": 0.0,
+      "e_ji": 0.0,
+      "f_ij": 0.0,
+      "f_ji": 0.0,
+      "c": 0.3,
+      "d": 0.0,
+      "Tmin": 293.15,
+      "Tmax": 373.15,
+      "T_range_note": "ASSUMED range (typical isobaric VLE data); check the original regression range",
+      "fitted_to": "VLE",
+      "source": "Aspen Plus databank (NRTL, regressed from Dortmund Data Bank VLE data); a_ji = 2.732 and |b_ji| = 617.3 confirmed in BIT Mesra CAPE notes; values and orientation confirmed against the published table (2026-11-02)",
+      "verify": false
+    },
+    {
+      "i": "acetone",
+      "j": "water",
+      "a_ij": 6.3981,
+      "a_ji": 0.0544,
+      "b_ij": -1808.991,
+      "b_ji": 419.9716,
+      "e_ij": 0.0,
+      "e_ji": 0.0,
+      "f_ij": 0.0,
+      "f_ji": 0.0,
+      "c": 0.3,
+      "d": 0.0,
+      "Tmin": 293.15,
+      "Tmax": 373.15,
+      "T_range_note": "ASSUMED range (typical isobaric VLE data); check the original regression range",
+      "fitted_to": "VLE",
+      "source": "Aspen Plus databank (DDB-regressed VLE), as tabulated in the NRTL appendix reproduced in BIT Mesra CAPE notes; orientation corrected 2026-11-02 (gamma_inf acetone in water = 5.8, water in acetone = 3.6 at 298 K)",
+      "verify": true
+    },
+    {
+      "i": "ethanol",
+      "j": "water",
+      "a_ij": 30.300737,
+      "a_ji": 62.323497,
+      "b_ij": -1547.102314,
+      "b_ji": -3617.59165,
+      "e_ij": -4.50258,
+      "e_ji": -8.317511,
+      "f_ij": 0.0,
+      "f_ji": 0.0,
+      "c": 0.47,
+      "d": 0.0,
+      "Tmin": 298.15,
+      "Tmax": 383.15,
+      "fitted_to": "HE",
+      "rmse_HE_J_per_mol": 28.4,
+      "rmse_HE_VLE_parameters": 256.0,
+      "n_points": 88,
+      "source": "Fitted (tools/fit_nrtl_he.py) to measured H^E from the NIST ThermoML archive: 10.1016/j.fluid.2007.06.007; 10.1016/j.fluid.2014.05.031; 10.1016/j.jct.2005.06.018; 10.1016/j.tca.2017.05.023. Stable (no liquid-liquid split) from 240 to 390 K.",
+      "verify": false
+    },
+    {
+      "i": "methanol",
+      "j": "water",
+      "a_ij": 6.913788,
+      "a_ji": -3.307221,
+      "b_ij": -686.041308,
+      "b_ji": -157.966492,
+      "e_ij": -1.723117,
+      "e_ji": -0.378896,
+      "f_ij": 0.0,
+      "f_ji": 0.0,
+      "c": 0.2,
+      "d": 0.0,
+      "Tmin": 298.15,
+      "Tmax": 377.47,
+      "fitted_to": "HE",
+      "rmse_HE_J_per_mol": 23.2,
+      "rmse_HE_VLE_parameters": 140.8,
+      "n_points": 151,
+      "source": "Fitted (tools/fit_nrtl_he.py) to measured H^E from the NIST ThermoML archive: 10.1016/j.jct.2005.03.012; 10.1016/j.tca.2006.02.028. Stable (no liquid-liquid split) from 240 to 390 K.",
+      "verify": false
+    }
+  ],
+  "miscibility": [
+    {
+      "i": "water",
+      "j": "n-hexane",
+      "miscible": false,
+      "source": "Solvent miscibility tables (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "water",
+      "j": "toluene",
+      "miscible": false,
+      "source": "Solvent miscibility tables (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "water",
+      "j": "n-dodecane",
+      "miscible": false,
+      "source": "Solvent miscibility tables (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "water",
+      "j": "n-octadecane",
+      "miscible": false,
+      "source": "Solvent miscibility tables (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "glycerol",
+      "j": "n-hexane",
+      "miscible": false,
+      "source": "Solvent miscibility tables",
+      "verify": false
+    },
+    {
+      "i": "glycerol",
+      "j": "toluene",
+      "miscible": false,
+      "source": "Solvent miscibility tables",
+      "verify": false
+    },
+    {
+      "i": "glycerol",
+      "j": "n-dodecane",
+      "miscible": false,
+      "source": "Solvent miscibility tables",
+      "verify": false
+    },
+    {
+      "i": "glycerol",
+      "j": "n-octadecane",
+      "miscible": false,
+      "source": "Solvent miscibility tables",
+      "verify": false
+    },
+    {
+      "i": "methanol",
+      "j": "n-hexane",
+      "miscible": false,
+      "source": "Partially miscible below UCST (~ 315 K); treated as immiscible",
+      "verify": true
+    },
+    {
+      "i": "methanol",
+      "j": "n-dodecane",
+      "miscible": false,
+      "source": "Partially miscible; treated as immiscible",
+      "verify": true
+    },
+    {
+      "i": "methanol",
+      "j": "n-octadecane",
+      "miscible": false,
+      "source": "Partially miscible; treated as immiscible",
+      "verify": true
+    },
+    {
+      "i": "water",
+      "j": "ethanol",
+      "miscible": true,
+      "source": "Completely miscible at all compositions (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "water",
+      "j": "methanol",
+      "miscible": true,
+      "source": "Completely miscible at all compositions (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "water",
+      "j": "acetone",
+      "miscible": true,
+      "source": "Completely miscible at all compositions (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "water",
+      "j": "glycerol",
+      "miscible": true,
+      "source": "Completely miscible at all compositions (CRC Handbook)",
+      "verify": false
+    },
+    {
+      "i": "ethanol",
+      "j": "n-hexane",
+      "miscible": true,
+      "source": "Solvent miscibility tables",
+      "verify": true
+    },
+    {
+      "i": "ethanol",
+      "j": "toluene",
+      "miscible": true,
+      "source": "Solvent miscibility tables",
+      "verify": false
+    },
+    {
+      "i": "acetone",
+      "j": "n-hexane",
+      "miscible": true,
+      "source": "Solvent miscibility tables",
+      "verify": false
+    },
+    {
+      "i": "acetone",
+      "j": "toluene",
+      "miscible": true,
+      "source": "Solvent miscibility tables",
+      "verify": false
+    }
+  ],
+  "solubility": [
+    {
+      "solute": "NaCl",
+      "solvent": "water",
+      "type": "table",
+      "T": [
+        273.15,
+        283.15,
+        293.15,
+        303.15,
+        313.15,
+        323.15,
+        333.15,
+        343.15,
+        353.15,
+        363.15,
+        373.15
+      ],
+      "values": [
+        35.65,
+        35.72,
+        35.89,
+        36.09,
+        36.37,
+        36.69,
+        37.04,
+        37.46,
+        37.93,
+        38.47,
+        38.99
+      ],
+      "unit": "g solute / 100 g solvent",
+      "dH_sol": {
+        "value": 3.87,
+        "unit": "kJ/mol",
+        "source": "Enthalpy of solution at infinite dilution, 298 K (CRC Handbook via Wikipedia 'Enthalpy change of solution')",
+        "verify": false
+      },
+      "source": "CRC Handbook aqueous solubility (mass %, 0-100 C) converted to g/100 g water, as tabulated in Wikipedia 'Solubility table' (checked: 26.28 wt% -> 35.65 g/100 g)",
+      "verify": false
+    }
+  ]
+}

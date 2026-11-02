@@ -1,0 +1,56 @@
+Running case1_pure_components ...
+Running case2_liquid_solutions ...
+  [2] ethanol + water: no data yet - paste literature data into validation/data/water_ethanol_cp_exp.csv
+Running case3_nanofluid ...
+Running case4_phase_change ...
+Running case5_route_consistency ...
+case                                system                                                                  quantity         metric    N         mean          max       status
+   1                                 water                                                        cp (liquid, 1 atm)         AARD %   20 9.505889e-02 2.408011e-01           ok
+   1                              methanol                                                        cp (liquid, 1 atm)         AARD %   28 1.675304e-01 3.496010e-01           ok
+   1                              n-hexane                                                        cp (liquid, 1 atm)         AARD %   29 2.335641e-01 4.446893e-01           ok
+   1                               toluene                                                        cp (liquid, 1 atm)         AARD %   37 6.468586e-01 1.245322e+00           ok
+   1                            n-dodecane                                                        cp (liquid, 1 atm)         AARD %   14 3.532131e-01 7.944540e-01           ok
+   1                      acetone (liquid)                                                         Cp (point values)         AARD %    2 5.035856e-01 6.835204e-01           ok
+   1                      ethanol (liquid)                                                         Cp (point values)         AARD %    4 6.255518e-02 1.501928e-01           ok
+   1                     glycerol (liquid)                                                         Cp (point values)         AARD %    6 1.474541e+00 2.366593e+00           ok
+   1                 n-octadecane (liquid)                                                         Cp (point values)         AARD %    2 3.169014e-01 6.338028e-01           ok
+   1                  n-octadecane (solid)                                                         Cp (point values)         AARD %    1 0.000000e+00 0.000000e+00           ok
+   1                                 water                                    cp from NIST cv via cp = cv + Tvα²/κ_T         AARD %   20 1.245511e-01 7.615012e-01           ok
+   2                       ethanol + water                                                H^E, NRTL (VLE parameters)     RMSD J/mol   88 2.559758e+02 6.300920e+02           ok
+   2                       ethanol + water                                               H^E, NRTL (refitted to H^E)     RMSD J/mol   88 2.835956e+01 1.038484e+02           ok
+   2                      methanol + water                                                H^E, NRTL (VLE parameters)     RMSD J/mol  151 1.407656e+02 3.438614e+02           ok
+   2                      methanol + water                                               H^E, NRTL (refitted to H^E)     RMSD J/mol  151 2.320694e+01 9.814057e+01           ok
+   2                      methanol + water                                                         Cp, ideal mixture         AARD %   12 7.472335e+00 1.282313e+01           ok
+   2                      methanol + water                                                  Cp, NRTL, VLE parameters         AARD %   12 6.513551e+00 1.137519e+01           ok
+   2                      methanol + water                                                  Cp, NRTL refitted to H^E         AARD %   12 2.708344e+00 7.540145e+00           ok
+   2                     ethanol + toluene                                   Cp, ideal fallback (no NRTL parameters)         AARD %   11 8.328057e+00 1.227446e+01           ok
+   2                      glycerol + water                                             H^E, ideal fallback (H^E = 0)     RMSD J/mol    9 4.662150e+02 6.110000e+02           ok
+   2                       ethanol + water            mean Cp^E 298-323 K from measured H^E(T), NRTL, VLE parameters RMSD J/(mol K)   19 9.116517e+00 1.330049e+01           ok
+   2                       ethanol + water            mean Cp^E 298-323 K from measured H^E(T), NRTL refitted to H^E RMSD J/(mol K)   19 2.311088e+00 4.104043e+00           ok
+   2                       ethanol + water                                                              Cp (mixture)         AARD %    0          NaN          NaN PENDING DATA
+   3                         Al2O3 + water                                             cp, Model I (volume-weighted)         AARD %   21 9.795679e+00 1.710159e+01           ok
+   3                         Al2O3 + water                                    cp, Model II = Route A (mass-weighted)         AARD %   21 2.387544e+00 5.277864e+00           ok
+   3                           CuO + water                                             cp, Model I (volume-weighted)         AARD %   24 3.396289e+01 6.332751e+01           ok
+   3                           CuO + water                                    cp, Model II = Route A (mass-weighted)         AARD %   24 2.407305e+00 4.940695e+00           ok
+   3                          SiO2 + water                                             cp, Model I (volume-weighted)         AARD %   24 1.071989e+01 2.033427e+01           ok
+   3                          SiO2 + water                                    cp, Model II = Route A (mass-weighted)         AARD %   24 1.420059e+00 3.624865e+00           ok
+   3                        all nanofluids                                                               cp, Model I         AARD %   69 1.852313e+01 6.332751e+01           ok
+   3                        all nanofluids                                                    cp, Model II = Route A         AARD %   69 2.057901e+00 5.277864e+00           ok
+   4                 ice + water + ethanol                        freezing point, ideal, ≤ 30 wt% (ice-slurry range)         |ΔT| K   13 1.060880e+00 3.852100e+00           ok
+   4                 ice + water + ethanol                                    freezing point, ideal, all, 2.5-72 wt%         |ΔT| K   18 2.459753e+00 7.454291e+00           ok
+   4                 ice + water + ethanol freezing point, ideal + ΔCp (engine default), ≤ 30 wt% (ice-slurry range)         |ΔT| K   13 8.420314e-01 3.082088e+00           ok
+   4                 ice + water + ethanol             freezing point, ideal + ΔCp (engine default), all, 2.5-72 wt%         |ΔT| K   18 2.530588e+00 1.927826e+01           ok
+   4                 ice + water + ethanol             freezing point, NRTL γ (H^E fit), ≤ 30 wt% (ice-slurry range)         |ΔT| K   13 3.308704e+00 9.000668e+00           ok
+   4                 ice + water + ethanol                         freezing point, NRTL γ (H^E fit), all, 2.5-72 wt%         |ΔT| K   17 5.040276e+00 1.425682e+01           ok
+   4                 ice + water + ethanol             freezing point, NRTL γ (VLE fit), ≤ 30 wt% (ice-slurry range)         |ΔT| K   13 2.059613e+00 6.574362e+00           ok
+   4                 ice + water + ethanol                         freezing point, NRTL γ (VLE fit), all, 2.5-72 wt%         |ΔT| K   18 4.861388e+00 1.505016e+01           ok
+   4                 ice + water + ethanol                                           engine liquidus vs SLE equation         |ΔT| K   13 1.456993e-08 1.456993e-08           ok
+   4                      ice_ethanol_10wt                                    ∫cp_app dT vs ΔH (energy conservation)     rel. dev % 1601 1.094794e-01 1.094794e-01           ok
+   4                   pcm_octadecane_20wt                                    ∫cp_app dT vs ΔH (energy conservation)     rel. dev % 1601 7.773201e-09 7.773201e-09           ok
+   5                          water (pure)                                         Route B (Q) vs Route A (ΔH_model)     rel. dev %    1 6.521486e-14 6.521486e-14           ok
+   5                water + ethanol 40 wt%                                         Route B (Q) vs Route A (ΔH_model)     rel. dev %    1 6.165324e-07 6.165324e-07           ok
+   5 methanol + water + ethanol + glycerol                                         Route B (Q) vs Route A (ΔH_model)     rel. dev %    1 6.007036e-07 6.007036e-07           ok
+   5           CuO–water nanofluid φ = 4 %                                         Route B (Q) vs Route A (ΔH_model)     rel. dev %    1 6.655468e-14 6.655468e-14           ok
+   5 water–toluene–ethanol emulsion + SiO2                                         Route B (Q) vs Route A (ΔH_model)     rel. dev %    1 8.284677e-08 8.284677e-08           ok
+   5             ice slurry 10 wt% ethanol                                         Route B (Q) vs Route A (ΔH_model)     rel. dev %    1 0.000000e+00 0.000000e+00           ok
+   5        PCM slurry 20 wt% n-octadecane                                         Route B (Q) vs Route A (ΔH_model)     rel. dev %    1 0.000000e+00 0.000000e+00           ok

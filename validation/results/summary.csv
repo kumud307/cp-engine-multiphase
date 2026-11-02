@@ -1,0 +1,50 @@
+case,system,quantity,metric,N,mean,max,reference,status
+1,water,"cp (liquid, 1 atm)",AARD %,20,0.09505888998119172,0.24080107016436852,NIST SRD 69 (Lemmon et al.),ok
+1,methanol,"cp (liquid, 1 atm)",AARD %,28,0.16753036752017253,0.3496010409103188,NIST SRD 69 (Lemmon et al.),ok
+1,n-hexane,"cp (liquid, 1 atm)",AARD %,29,0.233564106574133,0.444689315832229,NIST SRD 69 (Lemmon et al.),ok
+1,toluene,"cp (liquid, 1 atm)",AARD %,37,0.6468586119721292,1.2453215008459395,NIST SRD 69 (Lemmon et al.),ok
+1,n-dodecane,"cp (liquid, 1 atm)",AARD %,14,0.35321305262210273,0.7944540257167985,NIST SRD 69 (Lemmon et al.),ok
+1,acetone (liquid),Cp (point values),AARD %,2,0.503585634632422,0.6835204408213413,NIST WebBook,ok
+1,ethanol (liquid),Cp (point values),AARD %,4,0.06255518342049796,0.1501927800208368,NIST WebBook,ok
+1,glycerol (liquid),Cp (point values),AARD %,6,1.4745413873613453,2.366592781750791,NIST WebBook + O'Hanley et al. 2012,ok
+1,n-octadecane (liquid),Cp (point values),AARD %,2,0.31690140845070625,0.6338028169014125,NIST WebBook,ok
+1,n-octadecane (solid),Cp (point values),AARD %,1,0.0,0.0,NIST WebBook,ok
+1,water,cp from NIST cv via cp = cv + Tvα²/κ_T,AARD %,20,0.12455110881705271,0.7615012312113453,NIST SRD 69,ok
+2,ethanol + water,"H^E, NRTL (VLE parameters)",RMSD J/mol,88,255.97579476736743,630.092005097943,doi:10.1016/j.fluid.2007.06.007; doi:10.1016/j.fluid.2014.05.031; doi:10.1016/j.jct.2005.06.018; doi:10.1016/j.tca.2017.05.023,ok
+2,ethanol + water,"H^E, NRTL (refitted to H^E)",RMSD J/mol,88,28.359559004280708,103.8483979671463,doi:10.1016/j.fluid.2007.06.007; doi:10.1016/j.fluid.2014.05.031; doi:10.1016/j.jct.2005.06.018; doi:10.1016/j.tca.2017.05.023,ok
+2,methanol + water,"H^E, NRTL (VLE parameters)",RMSD J/mol,151,140.76561125219794,343.8614326309413,doi:10.1016/j.jct.2005.03.012; doi:10.1016/j.tca.2006.02.028,ok
+2,methanol + water,"H^E, NRTL (refitted to H^E)",RMSD J/mol,151,23.206938649719064,98.14057176363758,doi:10.1016/j.jct.2005.03.012; doi:10.1016/j.tca.2006.02.028,ok
+2,methanol + water,"Cp, ideal mixture",AARD %,12,7.472335002122247,12.823127361816287,doi:10.1016/j.jct.2006.11.001,ok
+2,methanol + water,"Cp, NRTL, VLE parameters",AARD %,12,6.513550698114391,11.375187699880199,doi:10.1016/j.jct.2006.11.001,ok
+2,methanol + water,"Cp, NRTL refitted to H^E",AARD %,12,2.7083444487355304,7.540144702141485,doi:10.1016/j.jct.2006.11.001,ok
+2,ethanol + toluene,"Cp, ideal fallback (no NRTL parameters)",AARD %,11,8.328057493652954,12.274457175028527,doi:10.1016/j.jct.2011.06.019,ok
+2,glycerol + water,"H^E, ideal fallback (H^E = 0)",RMSD J/mol,9,466.2150195397446,611.0,doi:10.1016/j.tca.2009.06.004,ok
+2,ethanol + water,"mean Cp^E 298-323 K from measured H^E(T), NRTL, VLE parameters",RMSD J/(mol K),19,9.116517383706778,13.300493514779175,doi:10.1016/j.jct.2005.06.018,ok
+2,ethanol + water,"mean Cp^E 298-323 K from measured H^E(T), NRTL refitted to H^E",RMSD J/(mol K),19,2.3110881026360532,4.104042568885109,doi:10.1016/j.jct.2005.06.018,ok
+2,ethanol + water,Cp (mixture),AARD %,0,,,see docs/DATA_TO_VERIFY.md,PENDING DATA
+3,Al2O3 + water,"cp, Model I (volume-weighted)",AARD %,21,9.795679153038268,17.101592105689285,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+3,Al2O3 + water,"cp, Model II = Route A (mass-weighted)",AARD %,21,2.387543643718515,5.277863566057545,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+3,CuO + water,"cp, Model I (volume-weighted)",AARD %,24,33.96288510998561,63.32750707789192,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+3,CuO + water,"cp, Model II = Route A (mass-weighted)",AARD %,24,2.4073051952430196,4.940694802057106,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+3,SiO2 + water,"cp, Model I (volume-weighted)",AARD %,24,10.719889569188119,20.334271964767066,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+3,SiO2 + water,"cp, Model II = Route A (mass-weighted)",AARD %,24,1.420059443826454,3.6248646089606957,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+3,all nanofluids,"cp, Model I",AARD %,69,18.52312832628947,63.32750707789192,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+3,all nanofluids,"cp, Model II = Route A",AARD %,69,2.0579009834167565,5.277863566057545,"O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised)",ok
+4,ice + water + ethanol,"freezing point, ideal, ≤ 30 wt% (ice-slurry range)",|ΔT| K,13,1.060880273691269,3.8521001270768807,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,"freezing point, ideal, all, 2.5-72 wt%",|ΔT| K,18,2.4597533850597255,7.454290640460243,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,"freezing point, ideal + ΔCp (engine default), ≤ 30 wt% (ice-slurry range)",|ΔT| K,13,0.8420313652987724,3.082087883468887,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,"freezing point, ideal + ΔCp (engine default), all, 2.5-72 wt%",|ΔT| K,18,2.5305879735660444,19.278264747505517,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,"freezing point, NRTL γ (H^E fit), ≤ 30 wt% (ice-slurry range)",|ΔT| K,13,3.308703641277261,9.00066822016521,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,"freezing point, NRTL γ (H^E fit), all, 2.5-72 wt%",|ΔT| K,17,5.040275791766809,14.256818821084892,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,"freezing point, NRTL γ (VLE fit), ≤ 30 wt% (ice-slurry range)",|ΔT| K,13,2.0596126524823104,6.574361548226307,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,"freezing point, NRTL γ (VLE fit), all, 2.5-72 wt%",|ΔT| K,18,4.8613876513317456,15.050161885686322,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
+4,ice + water + ethanol,engine liquidus vs SLE equation,|ΔT| K,13,1.4569934592145728e-08,1.4569934592145728e-08,internal check,ok
+4,ice_ethanol_10wt,∫cp_app dT vs ΔH (energy conservation),rel. dev %,1601,0.10947942847499355,0.10947942847499355,internal check,ok
+4,pcm_octadecane_20wt,∫cp_app dT vs ΔH (energy conservation),rel. dev %,1601,7.773201497958595e-09,7.773201497958595e-09,internal check,ok
+5,water (pure),Route B (Q) vs Route A (ΔH_model),rel. dev %,1,6.521485826961187e-14,6.521485826961187e-14,self-consistency,ok
+5,water + ethanol 40 wt%,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,6.165324111599317e-07,6.165324111599317e-07,self-consistency,ok
+5,methanol + water + ethanol + glycerol,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,6.00703631332884e-07,6.00703631332884e-07,self-consistency,ok
+5,CuO–water nanofluid φ = 4 %,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,6.655468115477433e-14,6.655468115477433e-14,self-consistency,ok
+5,water–toluene–ethanol emulsion + SiO2,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,8.28467707152125e-08,8.28467707152125e-08,self-consistency,ok
+5,ice slurry 10 wt% ethanol,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
+5,PCM slurry 20 wt% n-octadecane,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok

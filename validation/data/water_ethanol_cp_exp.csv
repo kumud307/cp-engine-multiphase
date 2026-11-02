@@ -1,0 +1,11 @@
+# SOURCE: TODO - paste experimental heat capacities of water + ethanol liquid mixtures here.
+# Candidate references (VERIFY each before citing; see docs/DATA_TO_VERIFY.md):
+#   - Journal of Chemical & Engineering Data / J. Chem. Thermodyn. papers on excess heat capacities of
+#     alcohol + water mixtures (e.g. Benson & D'Arcy type flow-calorimeter data at 298.15 K)
+# Columns:
+#   x_ethanol    mole fraction of ethanol
+#   T_K          temperature in K
+#   Cp_J_molK    molar heat capacity of the mixture, J/(mol K)  (leave empty if only CpE is reported)
+#   CpE_J_molK   excess molar heat capacity, J/(mol K)          (leave empty if only Cp is reported)
+#   reference    short citation for the row
+x_ethanol,T_K,Cp_J_molK,CpE_J_molK,reference

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cp_engine"
+version = "1.0.0"
+description = "General specific-heat (Cp) engine for multiphase fluids (CL 202, IIT Gandhinagar)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy", "scipy", "pandas", "matplotlib"]
+
+[project.optional-dependencies]
+dev = ["pytest", "sympy", "ipywidgets", "nbformat", "nbclient", "ipykernel", "pymupdf"]
+
+[tool.setuptools]
+packages = ["cp_engine", "cp_engine.models"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

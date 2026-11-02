@@ -1,0 +1,25 @@
+# SOURCE: Lange's Handbook of Chemistry (1967 edition, as cited), table 'Properties of aqueous ethanol solutions',
+#   as reproduced in Wikipedia 'Ethanol (data page)' (wikitext retrieved 2026-11-02).
+# Freezing (ice-liquidus) temperature of water + ethanol vs ethanol mass percent. Most values are given to
+#   1 K or 0.1 K. The 100 wt% row is the melting point of pure ethanol (not on the ice branch).
+w_ethanol_percent,freezing_point_C,freezing_point_K,branch,reference
+0.0,0.0,273.15,ice,Lange 1967
+2.5,-1.0,272.15,ice,Lange 1967
+4.8,-2.0,271.15,ice,Lange 1967
+6.8,-3.0,270.15,ice,Lange 1967
+11.3,-5.0,268.15,ice,Lange 1967
+13.78,-6.1,267.05,ice,Lange 1967
+16.4,-7.5,265.65,ice,Lange 1967
+17.5,-8.7,264.45,ice,Lange 1967
+18.8,-9.4,263.75,ice,Lange 1967
+20.3,-10.6,262.55,ice,Lange 1967
+22.11,-12.2,260.95,ice,Lange 1967
+24.2,-14.0,259.15,ice,Lange 1967
+26.7,-16.0,257.15,ice,Lange 1967
+29.9,-18.9,254.25,ice,Lange 1967
+33.8,-23.6,249.55,ice,Lange 1967
+39.0,-28.7,244.45,ice,Lange 1967
+46.3,-33.9,239.25,ice,Lange 1967
+56.1,-41.0,232.15,ice,Lange 1967
+71.9,-51.3,221.85,ice,Lange 1967
+100.0,-114.3,158.85,pure ethanol,Lange 1967

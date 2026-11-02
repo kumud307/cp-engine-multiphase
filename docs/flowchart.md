@@ -1,0 +1,53 @@
+# Flowchart – Specific Heat Engine for Multiphase Fluids
+
+- Start
+- Read the user input
+  - Accept any combination of known quantities: temperatures, pressure, composition, amounts, process type, heat, work, enthalpy change, internal energy change, entropy change, heat capacity at constant volume, heat capacity ratio
+- Normalise the input
+  - Convert every quantity to SI units
+  - Identify each component in the database (names, formulas, aliases such as ice)
+  - Convert the composition (mole, mass or volume fractions, moles, masses, solid volume fraction) into moles of each component
+  - Fill one missing fraction so that the fractions add up to one
+  - Convert energies given per kilogram or per mole into totals, choosing a calculation basis if no amount is given
+- Validate the input
+  - Check that temperatures and pressure are positive
+  - Check that fractions lie between zero and one and add up to one
+  - Check that amounts are not negative
+  - Check that declared phases are possible at the given temperature and pressure
+  - Check that the process description is consistent
+  - If a check fails, stop and show a clear message
+- Store all known quantities in the knowledge base
+- Apply the thermodynamic rules repeatedly (forward chaining)
+  - For every rule whose inputs are all known, compute its output
+  - If the output is already known, compare the two values and warn if they disagree
+  - Stop when no further rule can be applied
+- Route A: property route (needs temperature and composition)
+  - Decide the behaviour of each component: solid, liquid, gas, dissolved, melting, crystallising from solution, boiling
+  - Group the liquids into liquid phases (miscible liquids together, immiscible liquids separate)
+  - Classify the system: ideal mixture, real liquid solution, suspension, emulsion, slurry with phase change
+  - Look up the pure-component heat capacities
+  - Add the excess heat capacity for each real liquid solution, using interaction parameters fitted to measured heats of mixing
+  - Find how much of each component is solid, liquid or dissolved at each temperature from phase equilibrium
+  - Add the latent contribution of any material that changes phase
+  - Weight the phases by mass
+  - Report the heat capacity at a temperature, or the mean over an interval
+- Route B: calorimetric route (needs heat or work, temperature change and amount)
+  - Apply the first law for the stated process (constant pressure, constant volume, adiabatic)
+  - Obtain the enthalpy change or the internal energy change
+  - Divide by the amount and the temperature change
+  - At constant volume, convert the result to constant pressure
+- Route C: derived routes
+  - From a given enthalpy change and temperature change
+  - From a given entropy change over a temperature interval
+  - From a given heat capacity at constant volume using expansion and compressibility data
+  - From a given heat capacity ratio
+- Collect every route that reached a result
+  - If no route succeeded, search the rules for the smallest sets of extra inputs that would complete a route, and show them
+  - If several routes succeeded, report each one and the difference between them
+  - Choose the recommended value (measured data first, then the model prediction)
+- Report the results
+  - Heat capacity on a mass basis and on a molar basis
+  - Routes used and the chain of rules for each
+  - Breakdown into ideal, excess and latent parts
+  - Warnings, assumptions and notes
+- End

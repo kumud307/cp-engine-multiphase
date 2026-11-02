@@ -1,0 +1,19 @@
+# SOURCES:
+#   NIST Chemistry WebBook (SRD 69), condensed-phase heat capacity tables, accessed 2026-11-02 (original references below);
+#   O'Hanley et al., Adv. Mech. Eng. 2012, 181079, Table 5 (glycerin measured by DSC, J/(g K) x 92.094 g/mol).
+component,phase,T_K,Cp_J_molK,reference
+ethanol,liquid,298.15,112.4,"Petrov, Peshekhodov et al. (1989)"
+ethanol,liquid,298.15,112.30,"Vesely, Zabransky et al. (1979)"
+ethanol,liquid,298.15,112.33,"Fortier, Benson et al. (1976)"
+ethanol,liquid,313.15,118.72,"Fiock, Ginnings et al. (1931)"
+acetone,liquid,298.15,125.45,"Malhotra and Woolf (1991)"
+acetone,liquid,298.15,125.9,"Saluja, Peacock et al. (1979)"
+glycerol,liquid,298.15,218.9,"Bastos, Nilsson et al. (1988)"
+glycerol,liquid,298.15,221.9,"Murthy and Subrahmanyam (1977)"
+glycerol,liquid,293.15,219.2,"Atalla, El-Sharkawy et al. (1981)"
+glycerol,liquid,308.15,221.9,"O'Hanley et al. (2012), Table 5 (2.41 J/(g K))"
+glycerol,liquid,318.15,222.9,"O'Hanley et al. (2012), Table 5 (2.42 J/(g K))"
+glycerol,liquid,328.15,224.7,"O'Hanley et al. (2012), Table 5 (2.44 J/(g K))"
+n-octadecane,liquid,300.0,564.4,"Parks, Moore et al. (1949)"
+n-octadecane,liquid,325.0,568.0,"Hoehne (1981)"
+n-octadecane,solid,298.15,485.64,"Messerly, Guthrie et al. (1967)"

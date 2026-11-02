@@ -1,0 +1,1183 @@
+{
+  "_meta": {
+    "description": "Pure-component database for the Cp engine. Every number carries a 'source' string. Entries with \"verify\": true have NOT been checked against the primary reference and are listed in docs/DATA_TO_VERIFY.md.",
+    "units_note": "Each entry states its own unit; the loader converts everything to SI (K, J/mol, J/(mol K), kg/m3, 1/K, 1/Pa).",
+    "cp_types": {
+      "dippr100": "Cp = C1 + C2 T + C3 T^2 + C4 T^3 + C5 T^4  (coeffs ascending, T in K)",
+      "dippr107": "Cp = C1 + C2 [(C3/T)/sinh(C3/T)]^2 + C4 [(C5/T)/cosh(C5/T)]^2  (ideal gas, Aly-Lee)",
+      "shomate": "Cp = A + B t + C t^2 + D t^3 + E/t^2,  t = T/1000  (NIST), J/(mol K)",
+      "poly": "Cp = c0 + c1 T + c2 T^2 + ...  in the stated unit",
+      "constant": "Cp = value in the stated unit"
+    },
+    "density_types": {
+      "constant": "rho = value",
+      "poly": "rho = c0 + c1 T + c2 T^2  (kg/m3, T in K)",
+      "dippr105": "rho = C1 / C2^(1 + (1 - T/C3)^C4)  in mol/dm3 (converted with MW)",
+      "kell_water": "Kell (1975) rational polynomial for liquid water at 1 atm"
+    },
+    "verified_against_NIST_2026-11-02": "Cp correlations of water, methanol, n-hexane, toluene and n-dodecane were compared with NIST SRD 69 fluid tables at 0.101325 MPa (validation/case1); Shomate coefficients of Al2O3, CuO, SiO2 and NaCl were compared digit-by-digit with the NIST WebBook condensed-phase pages; Tm, dHfus, Tb, dHvap of the organic liquids were compared with the NIST WebBook phase-change pages."
+  },
+  "components": {
+    "water": {
+      "name": "Water",
+      "formula": "H2O",
+      "cas": "7732-18-5",
+      "aliases": [
+        "h2o"
+      ],
+      "phase_aliases": {
+        "ice": "solid",
+        "steam": "gas",
+        "water vapour": "gas",
+        "water vapor": "gas"
+      },
+      "miscibility_class": "aqueous",
+      "MW": {
+        "value": 18.015,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 273.15,
+        "unit": "K",
+        "source": "NIST Chemistry WebBook",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 6.009,
+        "unit": "kJ/mol",
+        "source": "333.55 kJ/kg (IAPWS / CRC Handbook) x MW",
+        "verify": false
+      },
+      "Tb": {
+        "value": 373.12,
+        "unit": "K",
+        "source": "IAPWS-95 via NIST WebBook (0.101325 MPa)",
+        "verify": false
+      },
+      "dHvap": {
+        "value": 40.65,
+        "unit": "kJ/mol",
+        "T": 373.12,
+        "source": "2256.4 kJ/kg at Tb, IAPWS-95 via NIST WebBook",
+        "verify": false
+      },
+      "cp": {
+        "liquid": {
+          "type": "dippr100",
+          "coeffs": [
+            276370.0,
+            -2090.1,
+            8.125,
+            -0.014116,
+            9.3701e-06
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 273.16,
+          "Tmax": 533.15,
+          "source": "Perry's Chemical Engineers' Handbook 8th ed., Table 2-153 (DIPPR eq. 100); max dev. 0.1 % from NIST SRD 69 at 275-370 K (validation case 1)",
+          "verify": false
+        },
+        "solid": {
+          "type": "poly",
+          "coeffs": [
+            393.92143,
+            4.3037611,
+            0.0099635884,
+            -1.0608406e-05
+          ],
+          "unit": "J/(kg K)",
+          "Tmin": 200.0,
+          "Tmax": 273.16,
+          "source": "Cubic fit (max dev 0.0004 %) to IAPWS R10-06(2009) ice Ih equation of state (Feistel & Wagner 2006), implemented in tools/iapws_ice.py and checked against Table 6 of the release to 9 digits; 2096.7 J/(kg K) at 273.15 K",
+          "verify": false
+        },
+        "gas": {
+          "type": "dippr107",
+          "coeffs": [
+            33363.0,
+            26790.0,
+            2610.5,
+            8896.0,
+            1169.0
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 100.0,
+          "Tmax": 2273.15,
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); gives 33.58 J/(mol K) at 298.15 K vs 33.59 (NIST)",
+          "verify": false
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "kell_water",
+          "Tmin": 273.15,
+          "Tmax": 423.15,
+          "source": "G.S. Kell, J. Chem. Eng. Data 20 (1975) 97; 997.05 kg/m3 at 25 C",
+          "verify": false
+        },
+        "solid": {
+          "type": "constant",
+          "value": 916.72,
+          "unit": "kg/m3",
+          "source": "IAPWS R10-06(2009) ice Ih equation of state (Feistel & Wagner 2006), implemented in tools/iapws_ice.py and checked against Table 6 of the release to 9 digits, at 273.15 K and 0.101325 MPa",
+          "verify": false
+        },
+        "gas": {
+          "type": "ideal_gas"
+        }
+      },
+      "alpha": {
+        "solid": {
+          "value": 0.00015984,
+          "unit": "1/K",
+          "source": "IAPWS R10-06(2009) ice Ih equation of state (Feistel & Wagner 2006), implemented in tools/iapws_ice.py and checked against Table 6 of the release to 9 digits, at 273.15 K",
+          "verify": false
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 4.505e-10,
+          "unit": "1/Pa",
+          "source": "Derived from NIST SRD 69 at 300 K: kappa_T = (Cp/Cv)/(rho w^2) (validation/_clean_nist.py)",
+          "verify": false
+        },
+        "solid": {
+          "value": 1.1778e-10,
+          "unit": "1/Pa",
+          "source": "IAPWS R10-06(2009) ice Ih equation of state (Feistel & Wagner 2006), implemented in tools/iapws_ice.py and checked against Table 6 of the release to 9 digits, at 273.15 K",
+          "verify": false
+        }
+      }
+    },
+    "ethanol": {
+      "name": "Ethanol",
+      "formula": "C2H5OH",
+      "cas": "64-17-5",
+      "aliases": [
+        "etoh",
+        "ethyl alcohol"
+      ],
+      "miscibility_class": "polar",
+      "MW": {
+        "value": 46.069,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 159.0,
+        "unit": "K",
+        "source": "NIST WebBook (average of 11 values)",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 4.973,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Yoshida (1944), at 159 K",
+        "verify": false
+      },
+      "Tb": {
+        "value": 351.44,
+        "unit": "K",
+        "source": "NIST WebBook (average 351.5 K)",
+        "verify": false
+      },
+      "dHvap": {
+        "value": 38.56,
+        "unit": "kJ/mol",
+        "T": 351.5,
+        "source": "NIST WebBook, Majer & Svoboda (1985), at Tb",
+        "verify": false
+      },
+      "cp": {
+        "liquid": {
+          "type": "dippr100",
+          "coeffs": [
+            102640.0,
+            -139.63,
+            -0.030341,
+            0.0020386,
+            0.0
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 159.05,
+          "Tmax": 390.0,
+          "source": "Perry's 8th ed., Table 2-153 (DIPPR eq. 100); 112.3 J/(mol K) at 298.15 K vs 112.3 (NIST, Vesely et al. 1979)",
+          "verify": false
+        },
+        "gas": {
+          "type": "dippr107",
+          "coeffs": [
+            49200.0,
+            145770.0,
+            1662.8,
+            93900.0,
+            744.7
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 200.0,
+          "Tmax": 1500.0,
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107)",
+          "verify": true
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "dippr105",
+          "coeffs": [
+            1.648,
+            0.27627,
+            513.92,
+            0.2331
+          ],
+          "Tmin": 159.05,
+          "Tmax": 513.92,
+          "source": "Perry's 8th ed., Table 2-32 (DIPPR eq. 105); checked 2026-11-02 against 32 density values 3-40 C from Lange's Handbook (1967, via Wikipedia 'Ethanol (data page)'): max deviation 0.16 %",
+          "verify": false
+        },
+        "gas": {
+          "type": "ideal_gas"
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 1.15e-09,
+          "unit": "1/Pa",
+          "source": "Isothermal compressibility at 298 K, CRC Handbook (Fluid properties)",
+          "verify": true
+        }
+      }
+    },
+    "methanol": {
+      "name": "Methanol",
+      "formula": "CH3OH",
+      "cas": "67-56-1",
+      "aliases": [
+        "meoh",
+        "methyl alcohol"
+      ],
+      "miscibility_class": "polar",
+      "MW": {
+        "value": 32.042,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 175.5,
+        "unit": "K",
+        "source": "NIST WebBook",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 3.18,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Domalski & Hearing (1996), at 175.3 K",
+        "verify": false
+      },
+      "Tb": {
+        "value": 337.7,
+        "unit": "K",
+        "source": "NIST WebBook",
+        "verify": false
+      },
+      "dHvap": {
+        "value": 35.21,
+        "unit": "kJ/mol",
+        "T": 337.7,
+        "source": "NIST WebBook, Majer & Svoboda (1985), at Tb",
+        "verify": false
+      },
+      "cp": {
+        "liquid": {
+          "type": "dippr100",
+          "coeffs": [
+            105800.0,
+            -362.23,
+            0.9379
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 175.47,
+          "Tmax": 400.0,
+          "source": "Perry's 8th ed., Table 2-153 (DIPPR eq. 100); checked vs NIST SRD 69 (validation case 1)",
+          "verify": false
+        },
+        "gas": {
+          "type": "dippr107",
+          "coeffs": [
+            39250.0,
+            87900.0,
+            1916.5,
+            53650.0,
+            896.7
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 200.0,
+          "Tmax": 1500.0,
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); 44.0 J/(mol K) at 298 K",
+          "verify": true
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "poly",
+          "coeffs": [
+            1080.137,
+            -1.029831,
+            0.0001458844
+          ],
+          "Tmin": 200.0,
+          "Tmax": 335.0,
+          "source": "Quadratic fit (this work) to NIST SRD 69 at 0.101325 MPa, max dev. 0.07 %",
+          "verify": false
+        },
+        "gas": {
+          "type": "ideal_gas"
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 1.28e-09,
+          "unit": "1/Pa",
+          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "verify": false
+        }
+      }
+    },
+    "glycerol": {
+      "name": "Glycerol",
+      "formula": "C3H8O3",
+      "cas": "56-81-5",
+      "aliases": [
+        "glycerine",
+        "glycerin",
+        "propane-1,2,3-triol"
+      ],
+      "miscibility_class": "polar",
+      "MW": {
+        "value": 92.094,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 291.0,
+        "unit": "K",
+        "source": "NIST WebBook (triple point, Gibson & Giauque 1923)",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 18.285,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Gibson & Giauque (1923)",
+        "verify": false
+      },
+      "Tb": {
+        "value": 563.0,
+        "unit": "K",
+        "source": "CRC Handbook (decomposes); NIST average 550 +- 40 K",
+        "verify": true
+      },
+      "dHvap": {
+        "value": 78.5,
+        "unit": "kJ/mol",
+        "T": 484.0,
+        "source": "NIST WebBook, Stephenson & Malanowski (1987), at 484 K (not at Tb)",
+        "verify": true
+      },
+      "cp": {
+        "liquid": {
+          "type": "poly",
+          "coeffs": [
+            32.9,
+            0.0761,
+            -2.69e-05
+          ],
+          "unit": "cal/(mol K)",
+          "Tmin": 273.15,
+          "Tmax": 523.15,
+          "source": "Omel'chenko (1962) as quoted by NIST WebBook; 222.6 J/(mol K) at 298 K vs 218.9-221.9 measured",
+          "verify": false
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "dippr105",
+          "coeffs": [
+            0.92382,
+            0.24386,
+            850.0,
+            0.22114
+          ],
+          "Tmin": 291.33,
+          "Tmax": 850.0,
+          "source": "Perry's 8th ed., Table 2-32 (DIPPR eq. 105); 1258 kg/m3 at 298 K",
+          "verify": true
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 2.2e-10,
+          "unit": "1/Pa",
+          "source": "Literature value at 298 K (approx.)",
+          "verify": true
+        }
+      }
+    },
+    "acetone": {
+      "name": "Acetone",
+      "formula": "C3H6O",
+      "cas": "67-64-1",
+      "aliases": [
+        "propanone",
+        "2-propanone"
+      ],
+      "miscibility_class": "polar",
+      "MW": {
+        "value": 58.08,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 178.5,
+        "unit": "K",
+        "source": "NIST WebBook (triple point, Wilhoit et al. 1985)",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 5.72,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Domalski & Hearing (1996)",
+        "verify": false
+      },
+      "Tb": {
+        "value": 329.3,
+        "unit": "K",
+        "source": "NIST WebBook",
+        "verify": false
+      },
+      "dHvap": {
+        "value": 29.1,
+        "unit": "kJ/mol",
+        "T": 329.3,
+        "source": "NIST WebBook, Majer & Svoboda (1985), at Tb",
+        "verify": false
+      },
+      "cp": {
+        "liquid": {
+          "type": "dippr100",
+          "coeffs": [
+            135600.0,
+            -177.0,
+            0.2837,
+            0.000689
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 178.45,
+          "Tmax": 329.44,
+          "source": "Perry's 8th ed., Table 2-153 (DIPPR eq. 100); 126.3 J/(mol K) at 298 K vs 125.45 (NIST, Malhotra & Woolf 1991)",
+          "verify": false
+        },
+        "gas": {
+          "type": "dippr107",
+          "coeffs": [
+            57040.0,
+            163200.0,
+            1607.0,
+            96800.0,
+            731.5
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 200.0,
+          "Tmax": 1500.0,
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); 74.4 J/(mol K) at 298 K",
+          "verify": true
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "dippr105",
+          "coeffs": [
+            1.2332,
+            0.25886,
+            508.2,
+            0.2913
+          ],
+          "Tmin": 178.45,
+          "Tmax": 508.2,
+          "source": "Perry's 8th ed., Table 2-32 (DIPPR eq. 105); 786 kg/m3 at 298 K",
+          "verify": true
+        },
+        "gas": {
+          "type": "ideal_gas"
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 1.3e-09,
+          "unit": "1/Pa",
+          "source": "Literature value at 298 K (approx.)",
+          "verify": true
+        }
+      }
+    },
+    "n-hexane": {
+      "name": "n-Hexane",
+      "formula": "C6H14",
+      "cas": "110-54-3",
+      "aliases": [
+        "hexane"
+      ],
+      "miscibility_class": "nonpolar",
+      "MW": {
+        "value": 86.175,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 177.8,
+        "unit": "K",
+        "source": "NIST WebBook",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 13.08,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Domalski & Hearing (1996)",
+        "verify": false
+      },
+      "Tb": {
+        "value": 341.9,
+        "unit": "K",
+        "source": "NIST WebBook",
+        "verify": false
+      },
+      "dHvap": {
+        "value": 28.85,
+        "unit": "kJ/mol",
+        "T": 341.9,
+        "source": "NIST WebBook, Majer & Svoboda (1985), at Tb",
+        "verify": false
+      },
+      "cp": {
+        "liquid": {
+          "type": "dippr100",
+          "coeffs": [
+            172120.0,
+            -183.78,
+            0.88734
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 177.83,
+          "Tmax": 460.0,
+          "source": "Perry's 8th ed., Table 2-153 (DIPPR eq. 100); checked vs NIST SRD 69 (validation case 1)",
+          "verify": false
+        },
+        "gas": {
+          "type": "dippr107",
+          "coeffs": [
+            104400.0,
+            352300.0,
+            1694.6,
+            236900.0,
+            761.6
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 200.0,
+          "Tmax": 1500.0,
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107)",
+          "verify": true
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "poly",
+          "coeffs": [
+            882.4191,
+            -0.6149807,
+            -0.0004994226
+          ],
+          "Tmin": 200.0,
+          "Tmax": 340.0,
+          "source": "Quadratic fit (this work) to NIST SRD 69 at 0.101325 MPa, max dev. 0.06 %",
+          "verify": false
+        },
+        "gas": {
+          "type": "ideal_gas"
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 1.731e-09,
+          "unit": "1/Pa",
+          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "verify": false
+        }
+      }
+    },
+    "toluene": {
+      "name": "Toluene",
+      "formula": "C7H8",
+      "cas": "108-88-3",
+      "aliases": [
+        "methylbenzene"
+      ],
+      "miscibility_class": "nonpolar",
+      "MW": {
+        "value": 92.138,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 178.15,
+        "unit": "K",
+        "source": "NIST WebBook",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 6.636,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Scott et al. (1962)",
+        "verify": false
+      },
+      "Tb": {
+        "value": 383.8,
+        "unit": "K",
+        "source": "NIST WebBook",
+        "verify": false
+      },
+      "dHvap": {
+        "value": 33.18,
+        "unit": "kJ/mol",
+        "T": 383.8,
+        "source": "NIST WebBook, Majer & Svoboda (1985), at Tb",
+        "verify": false
+      },
+      "cp": {
+        "liquid": {
+          "type": "dippr100",
+          "coeffs": [
+            140140.0,
+            -152.3,
+            0.695
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 178.18,
+          "Tmax": 500.0,
+          "source": "Perry's 8th ed., Table 2-153 (DIPPR eq. 100); checked vs NIST SRD 69 (validation case 1)",
+          "verify": false
+        },
+        "gas": {
+          "type": "dippr107",
+          "coeffs": [
+            58140.0,
+            286300.0,
+            1440.6,
+            189800.0,
+            650.43
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 200.0,
+          "Tmax": 1500.0,
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107)",
+          "verify": true
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "poly",
+          "coeffs": [
+            1126.749,
+            -0.831453,
+            -0.0001879397
+          ],
+          "Tmin": 200.0,
+          "Tmax": 380.0,
+          "source": "Quadratic fit (this work) to NIST SRD 69 at 0.101325 MPa, max dev. 0.09 %",
+          "verify": false
+        },
+        "gas": {
+          "type": "ideal_gas"
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 9.329e-10,
+          "unit": "1/Pa",
+          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "verify": false
+        }
+      }
+    },
+    "n-dodecane": {
+      "name": "n-Dodecane (vegetable-oil surrogate)",
+      "formula": "C12H26",
+      "cas": "112-40-3",
+      "aliases": [
+        "dodecane",
+        "oil",
+        "vegetable oil"
+      ],
+      "miscibility_class": "nonpolar",
+      "MW": {
+        "value": 170.334,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 263.59,
+        "unit": "K",
+        "source": "NIST WebBook, Finke et al. (1954)",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 36.84,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Finke et al. (1954)",
+        "verify": false
+      },
+      "Tb": {
+        "value": 489.5,
+        "unit": "K",
+        "source": "NIST WebBook / CRC Handbook",
+        "verify": true
+      },
+      "dHvap": {
+        "value": 44.1,
+        "unit": "kJ/mol",
+        "T": 489.5,
+        "source": "Approximate value at Tb (not found on NIST page; NIST gives 61.4 kJ/mol at 299 K)",
+        "verify": true
+      },
+      "cp": {
+        "liquid": {
+          "type": "dippr100",
+          "coeffs": [
+            508210.0,
+            -1368.7,
+            3.1015
+          ],
+          "unit": "J/(kmol K)",
+          "Tmin": 263.57,
+          "Tmax": 330.0,
+          "source": "Perry's 8th ed., Table 2-153 (DIPPR eq. 100); checked vs NIST SRD 69 (validation case 1)",
+          "verify": false
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "poly",
+          "coeffs": [
+            931.3402,
+            -0.5221634,
+            -0.0003338131
+          ],
+          "Tmin": 265.0,
+          "Tmax": 480.0,
+          "source": "Quadratic fit (this work) to NIST SRD 69 at 0.101325 MPa, max dev. 0.18 %",
+          "verify": false
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 1.008e-09,
+          "unit": "1/Pa",
+          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "verify": false
+        }
+      }
+    },
+    "n-octadecane": {
+      "name": "n-Octadecane (paraffin PCM)",
+      "formula": "C18H38",
+      "cas": "593-45-3",
+      "aliases": [
+        "octadecane",
+        "paraffin",
+        "paraffin wax",
+        "pcm"
+      ],
+      "miscibility_class": "nonpolar",
+      "MW": {
+        "value": 254.5,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 301.3,
+        "unit": "K",
+        "source": "NIST WebBook (triple point, Parks et al. 1949; Messerly et al. 1967: 301.33 K)",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 61.706,
+        "unit": "kJ/mol",
+        "source": "NIST WebBook, Messerly, Guthrie et al. (1967) = 242.5 kJ/kg",
+        "verify": false
+      },
+      "Tb": {
+        "value": 589.3,
+        "unit": "K",
+        "source": "NIST WebBook (Weast & Grasselli 1989)",
+        "verify": false
+      },
+      "dHvap": {
+        "value": 64.8,
+        "unit": "kJ/mol",
+        "T": 516.0,
+        "source": "NIST WebBook, Stephenson & Malanowski (1987), at 516 K (not at Tb)",
+        "verify": true
+      },
+      "cp": {
+        "liquid": {
+          "type": "constant",
+          "value": 564.4,
+          "unit": "J/(mol K)",
+          "Tmin": 300.0,
+          "Tmax": 340.0,
+          "source": "NIST WebBook, Parks et al. (1949) at 300 K (568 J/(mol K) at 325 K, Hoehne 1981) - treated as constant",
+          "verify": false
+        },
+        "solid": {
+          "type": "constant",
+          "value": 485.64,
+          "unit": "J/(mol K)",
+          "Tmin": 270.0,
+          "Tmax": 301.3,
+          "source": "NIST WebBook, Messerly, Guthrie et al. (1967) at 298.15 K - treated as constant (pre-melting ignored)",
+          "verify": true
+        }
+      },
+      "density": {
+        "liquid": {
+          "type": "constant",
+          "value": 777.0,
+          "unit": "kg/m3",
+          "source": "Commonly used PCM value near 303 K (literature range 724-777)",
+          "verify": true
+        },
+        "solid": {
+          "type": "constant",
+          "value": 865.0,
+          "unit": "kg/m3",
+          "source": "Commonly used PCM value (literature range 814-865)",
+          "verify": true
+        }
+      },
+      "alpha": {
+        "liquid": {
+          "value": 0.00088,
+          "unit": "1/K",
+          "source": "Typical n-alkane liquid value (approx.)",
+          "verify": true
+        },
+        "solid": {
+          "value": 0.0003,
+          "unit": "1/K",
+          "source": "Typical n-alkane crystal value (approx.)",
+          "verify": true
+        }
+      },
+      "kappa_T": {
+        "liquid": {
+          "value": 9e-10,
+          "unit": "1/Pa",
+          "source": "Typical n-alkane liquid value (approx.)",
+          "verify": true
+        },
+        "solid": {
+          "value": 3e-10,
+          "unit": "1/Pa",
+          "source": "Typical n-alkane crystal value (approx.)",
+          "verify": true
+        }
+      }
+    },
+    "Al2O3": {
+      "name": "Aluminium oxide (alpha-alumina, corundum)",
+      "formula": "Al2O3",
+      "cas": "1344-28-1",
+      "aliases": [
+        "alumina",
+        "al2o3",
+        "aluminium oxide",
+        "aluminum oxide"
+      ],
+      "miscibility_class": "insoluble_solid",
+      "MW": {
+        "value": 101.961,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 2327.0,
+        "unit": "K",
+        "source": "NIST WebBook (Shomate solid/liquid boundary)",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 111.1,
+        "unit": "kJ/mol",
+        "source": "NIST-JANAF tables (approx.)",
+        "verify": true
+      },
+      "cp": {
+        "solid": {
+          "type": "shomate",
+          "coeffs": [
+            102.429,
+            38.7498,
+            -15.9109,
+            2.628181,
+            -3.007551
+          ],
+          "unit": "J/(mol K)",
+          "Tmin": 298.0,
+          "Tmax": 2327.0,
+          "source": "NIST WebBook Shomate parameters (Chase 1998, NIST-JANAF), checked digit-by-digit 2026-11-02",
+          "verify": false
+        }
+      },
+      "density": {
+        "solid": {
+          "type": "constant",
+          "value": 3987.0,
+          "unit": "kg/m3",
+          "source": "alpha-Al2O3 (corundum) 3.987 g/cm3, CRC Handbook via Wikipedia infobox (checked 2026-11-02). Nanoparticles (often gamma-alumina) may be less dense",
+          "verify": false
+        }
+      },
+      "alpha": {
+        "solid": {
+          "value": 1.6e-05,
+          "unit": "1/K",
+          "source": "Volumetric expansivity ~3 x 5.4e-6 1/K near 298 K (approx.)",
+          "verify": true
+        }
+      },
+      "kappa_T": {
+        "solid": {
+          "value": 3.9e-12,
+          "unit": "1/Pa",
+          "source": "1/bulk modulus (~254 GPa) (approx.)",
+          "verify": true
+        }
+      }
+    },
+    "CuO": {
+      "name": "Copper(II) oxide",
+      "formula": "CuO",
+      "cas": "1317-38-0",
+      "aliases": [
+        "cuo",
+        "copper oxide",
+        "cupric oxide"
+      ],
+      "miscibility_class": "insoluble_solid",
+      "MW": {
+        "value": 79.545,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "cp": {
+        "solid": {
+          "type": "shomate",
+          "coeffs": [
+            48.56494,
+            7.498607,
+            -0.05598,
+            0.013851,
+            -0.760082
+          ],
+          "unit": "J/(mol K)",
+          "Tmin": 298.0,
+          "Tmax": 2000.0,
+          "source": "NIST WebBook Shomate parameters (Chase 1998, NIST-JANAF), checked digit-by-digit 2026-11-02",
+          "verify": false
+        }
+      },
+      "density": {
+        "solid": {
+          "type": "constant",
+          "value": 6315.0,
+          "unit": "kg/m3",
+          "source": "6.315 g/cm3, CRC Handbook via Wikipedia infobox (checked 2026-11-02)",
+          "verify": false
+        }
+      },
+      "alpha": {
+        "solid": {
+          "value": 2e-05,
+          "unit": "1/K",
+          "source": "Order-of-magnitude estimate for a metal oxide",
+          "verify": true
+        }
+      },
+      "kappa_T": {
+        "solid": {
+          "value": 9e-12,
+          "unit": "1/Pa",
+          "source": "Order-of-magnitude estimate (bulk modulus ~110 GPa)",
+          "verify": true
+        }
+      }
+    },
+    "SiO2": {
+      "name": "Silicon dioxide (alpha-quartz)",
+      "formula": "SiO2",
+      "cas": "14808-60-7",
+      "aliases": [
+        "silica",
+        "sio2",
+        "quartz"
+      ],
+      "miscibility_class": "insoluble_solid",
+      "MW": {
+        "value": 60.084,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 1996.0,
+        "unit": "K",
+        "source": "NIST WebBook (upper Shomate limit of crystalline phases)",
+        "verify": true
+      },
+      "dHfus": {
+        "value": 9.6,
+        "unit": "kJ/mol",
+        "source": "NIST-JANAF (approx.)",
+        "verify": true
+      },
+      "cp": {
+        "solid": {
+          "type": "shomate",
+          "coeffs": [
+            -6.076591,
+            251.6755,
+            -324.7964,
+            168.5604,
+            0.002548
+          ],
+          "unit": "J/(mol K)",
+          "Tmin": 298.0,
+          "Tmax": 847.0,
+          "source": "NIST WebBook Shomate parameters, alpha-quartz (Chase 1998), checked digit-by-digit 2026-11-02",
+          "verify": false
+        }
+      },
+      "density": {
+        "solid": {
+          "type": "constant",
+          "value": 2648.0,
+          "unit": "kg/m3",
+          "source": "alpha-quartz 2.648 g/cm3 (amorphous silica 2.196 g/cm3), CRC Handbook 92nd ed. via Wikipedia (checked 2026-11-02)",
+          "verify": false
+        }
+      },
+      "alpha": {
+        "solid": {
+          "value": 3.5e-05,
+          "unit": "1/K",
+          "source": "alpha-quartz volumetric expansivity near 298 K (approx.)",
+          "verify": true
+        }
+      },
+      "kappa_T": {
+        "solid": {
+          "value": 2.7e-11,
+          "unit": "1/Pa",
+          "source": "1/bulk modulus (~37 GPa) (approx.)",
+          "verify": true
+        }
+      }
+    },
+    "NaCl": {
+      "name": "Sodium chloride",
+      "formula": "NaCl",
+      "cas": "7647-14-5",
+      "aliases": [
+        "nacl",
+        "salt",
+        "sodium chloride",
+        "halite"
+      ],
+      "miscibility_class": "soluble_solid",
+      "ions_in_solution": {
+        "value": 2,
+        "source": "NaCl -> Na+ + Cl- (complete dissociation assumed; used for colligative freezing-point depression)",
+        "verify": false
+      },
+      "MW": {
+        "value": 58.443,
+        "unit": "g/mol",
+        "source": "IUPAC standard atomic weights",
+        "verify": false
+      },
+      "Tm": {
+        "value": 1073.8,
+        "unit": "K",
+        "source": "NIST WebBook (Shomate solid/liquid boundary 1073-1074 K)",
+        "verify": false
+      },
+      "dHfus": {
+        "value": 28.16,
+        "unit": "kJ/mol",
+        "source": "NIST-JANAF (approx.)",
+        "verify": true
+      },
+      "cp": {
+        "solid": {
+          "type": "shomate",
+          "coeffs": [
+            50.72389,
+            6.672267,
+            -2.517167,
+            10.15934,
+            -0.200675
+          ],
+          "unit": "J/(mol K)",
+          "Tmin": 298.0,
+          "Tmax": 1073.0,
+          "source": "NIST WebBook Shomate parameters (Chase 1998, NIST-JANAF), checked digit-by-digit 2026-11-02",
+          "verify": false
+        }
+      },
+      "density": {
+        "solid": {
+          "type": "constant",
+          "value": 2170.0,
+          "unit": "kg/m3",
+          "source": "2.17 g/cm3, CRC Handbook via Wikipedia infobox (checked 2026-11-02)",
+          "verify": false
+        }
+      },
+      "alpha": {
+        "solid": {
+          "value": 0.00012,
+          "unit": "1/K",
+          "source": "~3 x 40e-6 1/K linear expansivity (approx.)",
+          "verify": true
+        }
+      },
+      "kappa_T": {
+        "solid": {
+          "value": 4.2e-11,
+          "unit": "1/Pa",
+          "source": "1/bulk modulus (~24 GPa) (approx.)",
+          "verify": true
+        }
+      }
+    }
+  }
+}
