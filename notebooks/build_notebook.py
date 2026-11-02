@@ -223,6 +223,37 @@ r = engine.solve({"T": "25 C", "mass_fractions": {"water": 0.7, "NaCl": 0.3}})
 print(r)
 """)
 
+md("### 8.5 Pressure, electrolytes and your own data\n"
+   "Cp correlations are for 1 atm. At other pressures the engine applies the exact relation "
+   "(∂Cp/∂P)_T = −T(∂²v/∂T²)_P with v(T, P) from the Tait equation (validated against NIST to 100 MPa).")
+code(r"""
+for P in ("1 atm", "500 bar", "1000 bar"):
+    r = engine.solve({"T": "25 C", "P": P, "components": ["water"]})
+    print(f"water at {P:>8}: cp = {r.cp_mass:7.1f} J/(kg K)")
+print("NIST SRD 69 (validation/data): 4060.1 J/(kg K) at 50.1 MPa, 3976.5 J/(kg K) at 100.1 MPa")
+""")
+md("**Brine:** dissolved NaCl is described by its apparent molar heat capacity (fitted to measured NaCl(aq) data), "
+   "not by the heat capacity of solid salt.")
+code(r"""
+r = engine.solve({"T": "25 C", "mass_fractions": {"water": 0.965, "NaCl": 0.035}})
+print(f"3.5 wt% NaCl: cp = {r.cp_mass:.1f} J/(kg K)"); r.breakdown_table()
+""")
+md("**Your own components and Cp values** (for one calculation; the database files are not changed):")
+code(r"""
+r = engine.solve({"T": "25 C", "mass_fractions": {"water": 0.5, "ethylene glycol": 0.5},
+                  "custom_components": {"ethylene glycol": {"MW": "62.07 g/mol", "cp": "2.43 kJ/(kg K)",
+                                                            "density": "1110 kg/m3", "miscibility_class": "polar"}}})
+print(f"water + ethylene glycol (user-defined): {r.cp_mass:.1f} J/(kg K)")
+r = engine.solve({"T": "25 C", "components": ["water"], "pure_cp": {"water": "4.0 kJ/(kg K)"}})
+print(f"water with an overridden Cp: {r.cp_mass:.1f} J/(kg K)")
+""")
+md("**Point value inside a melting step:** the engine warns that it depends on the assumed melt width and reports "
+   "width-independent quantities instead.")
+code(r"""
+r = engine.solve({"T": "301.3 K", "mass_fractions": {"water": 0.8, "n-octadecane": 0.2}})
+print([w for w in r.warnings if "depends on the assumed width" in w][0])
+""")
+
 # ---------------------------------------------------------------------------
 md("## 9. Figures (saved to `figures/` as PNG and PDF, 300 dpi)")
 code(r"""
@@ -307,7 +338,7 @@ except Exception as e:
 # ---------------------------------------------------------------------------
 md("## 13. Validation against literature data\n"
    "All comparisons use published measurements (provenance in `docs/DATA_SOURCES.md`): NIST SRD 69 (case 1), "
-   "the NIST ThermoML archive (case 2: Hᴱ and Cp of water + alcohols, ethanol + toluene), O'Hanley et al. 2012 "
+   "the NIST ThermoML archive (case 2: Hᴱ and Cp of water + alcohols, brine, glycerol, ethanol + toluene; case 2b: held-out cross-validation of every fit), O'Hanley et al. 2012 "
    "nanofluid DSC data (case 3), Lange's freezing points of aqueous ethanol (case 4), and the Route A ↔ Route B "
    "round trip (case 5). Metric column: AARD % for relative deviations, RMSD for excess properties, |ΔT| in K for freezing points.")
 code(r"""
@@ -317,7 +348,7 @@ summary[["case", "system", "quantity", "metric", "N", "mean", "max", "status"]]
 """)
 code(r"""
 from IPython.display import Image, display
-for f in ["val1_toluene", "fig_HE_water_ethanol", "fig_cpE_from_HE_water_ethanol", "fig_cp_methanol_water",
+for f in ["val1_toluene", "fig_pressure", "fig_HE_water_ethanol", "fig_cpE_from_HE_water_ethanol", "fig_cp_methanol_water",
           "fig_nanofluid_parity", "fig_nanofluid_models", "fig_freezing_points", "fig_cpT_ice_ethanol_10wt", "fig_pcm_peak"]:
     display(Image(filename=str(ROOT / "figures" / f"{f}.png"), width=460))
 """)

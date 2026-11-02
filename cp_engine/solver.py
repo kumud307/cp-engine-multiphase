@@ -396,25 +396,41 @@ class CpEngine:
     def solve(self, inputs: dict | SystemInput, raise_errors: bool = False) -> CpResult:
         """Compute Cp from any valid combination of inputs (see cp_engine.inputs)."""
         try:
-            inp = normalise(inputs, self.db)
-            validate(inp, self.db)
+            db, inputs, db_log = self._database_for(inputs)
+            inp = normalise(inputs, db)
+            inp.log.extend(db_log)
+            validate(inp, db)
         except CpEngineError as exc:
             if raise_errors:
                 raise
             return CpResult(success=False, errors=[f"{type(exc).__name__}: {exc}"])
-        solver = Solver(self.db, inp)
+        solver = Solver(db, inp)
         solver.run()
         return self._assemble(solver, inp)
+
+    def _database_for(self, inputs):
+        """Database for one calculation: adds 'custom_components' and applies 'pure_cp' (see custom.py)."""
+        from .custom import extended_database
+        log = Log()
+        if isinstance(inputs, SystemInput):
+            inputs = inputs.to_dict()
+        if not isinstance(inputs, dict) or not ({"custom_components", "pure_cp"} & set(inputs)):
+            return self.db, inputs, log
+        inputs = dict(inputs)
+        custom, pure = inputs.pop("custom_components", None), inputs.pop("pure_cp", None)
+        return extended_database(self.db, custom, pure, log), inputs, log
 
     # ------------------------------------------------------------------
     def system(self, inputs: dict | SystemInput) -> "SystemModel":
         """Mixture model (Route A) built from the composition part of `inputs`."""
         from .system import SystemModel
-        inp = normalise(inputs, self.db)
-        validate(inp, self.db)
+        db, inputs, db_log = self._database_for(inputs)
+        inp = normalise(inputs, db)
+        inp.log.extend(db_log)
+        validate(inp, db)
         if not inp.amounts:
             raise CpEngineError("A composition is needed to build the mixture model.")
-        return SystemModel(self.db, inp.amounts, inp.phase_spec, inp.known.get("P", 101325.0),
+        return SystemModel(db, inp.amounts, inp.phase_spec, inp.known.get("P", 101325.0),
                            inp.options, inp.log)
 
     def cp_curve(self, inputs: dict | SystemInput, T) -> pd.DataFrame:

@@ -7,9 +7,11 @@ part of the apparent heat capacity of ice slurries.
 
 Models compared (ice = pure solid water; liquid mole fraction x_w):
   ideal                 ln x_w = −(ΔH_fus/R)(1/T − 1/T_m)
-  ideal + ΔCp (default) adds (ΔCp/R)(T_m/T − 1 − ln(T_m/T)), consistent with the Kirchhoff enthalpies
-  NRTL γ_w (H^E fit)    ln(x_w γ_w) = ...  with the H^E-fitted parameters
-  NRTL γ_w (VLE fit)    same with the VLE parameters
+  ideal + ΔCp           adds (ΔCp/R)(T_m/T − 1 − ln(T_m/T)), consistent with the Kirchhoff enthalpies
+  NRTL γ_w, H^E+SLE set ln(x_w γ_w) = ... with the parameters fitted JOINTLY to H^E and these freezing points
+                        (engine default: one liquid model for H^E and SLE). Because these points were
+                        used in the fit, its held-out accuracy is reported by case 2b (3-fold CV).
+  NRTL γ_w, VLE set     same with the VLE parameters
 Internal checks (no data needed): the engine's liquidus equals the model equation; ∫cp_app dT
 through a melting peak equals ΔH (energy conservation) for an ice slurry and a PCM slurry.
 """
@@ -57,9 +59,10 @@ def run(save: bool = True) -> list[dict]:
     nw = (100 - data.w_ethanol_percent) / w.MW
     ne = data.w_ethanol_percent / db.get("ethanol").MW
     data["x_w"] = nw / (nw + ne)
+    DEFAULT = "NRTL γ, H^E+SLE set (engine default; fit quality - held-out: case 2b)"
     models = {"ideal": lambda x: pc.ideal_freezing_point(x, w.Tm, w.dHfus),
-              "ideal + ΔCp (engine default)": lambda x: pc.ideal_freezing_point(x, w.Tm, w.dHfus, dCp)}
-    for label, prefer in (("NRTL γ (H^E fit)", "HE"), ("NRTL γ (VLE fit)", "VLE")):
+              "ideal + ΔCp (option sle_activity='ideal')": lambda x: pc.ideal_freezing_point(x, w.Tm, w.dHfus, dCp)}
+    for label, prefer in ((DEFAULT, "HE"), ("NRTL γ, VLE set", "VLE")):
         m = NRTL(["water", "ethanol"], db, prefer=prefer)
         models[label] = (lambda m: lambda x: pc.liquidus_temperature(
             x, w.Tm, w.dHfus, lambda T: m.ln_gamma([x, 1 - x], T)[0], dCp))(m)
@@ -81,7 +84,7 @@ def run(save: bool = True) -> list[dict]:
     # engine consistency: the full engine's liquidus equals the ideal+ΔCp equation
     test = data[data.w_ethanol_percent <= 30.0]
     eng = [engine_liquidus(db, wp / 100) for wp in test.w_ethanol_percent]
-    err = np.abs(np.array(eng) - test["ideal + ΔCp (engine default)"].values).max()
+    err = np.abs(np.array(eng) - test[DEFAULT].values).max()
     rows.append(row("4", "ice + water + ethanol", "engine liquidus vs SLE equation", len(test),
                     float(err), float(err), "internal check", metric="|ΔT| K"))
 
@@ -107,8 +110,8 @@ def run(save: bool = True) -> list[dict]:
         plot_apparent_peak(curves, "20 wt% n-octadecane in water", name="fig_pcm_peak", outdir=FIGS)
         wp = np.linspace(0.5, 72, 120)
         xw = ((100 - wp) / w.MW) / ((100 - wp) / w.MW + wp / db.get("ethanol").MW)
-        shown = {"ideal + ΔCp (engine default)": r"ideal + $\Delta C_p$ (engine default)", "ideal": "ideal",
-                 "NRTL γ (H^E fit)": r"NRTL $\gamma$ (H$^E$ fit)"}
+        shown = {DEFAULT: r"NRTL $\gamma$, H$^E$+SLE fit (engine default)",
+                 "ideal + ΔCp (option sle_activity='ideal')": r"ideal + $\Delta C_p$", "ideal": "ideal"}
         curves_m = {disp: (wp, [safe(models[lab], x) - 273.15 for x in xw]) for lab, disp in shown.items()}
         plot_data_vs_models({"Lange (1967)": {"data": (data.w_ethanol_percent, data.freezing_point_K - 273.15),
                                               "models": curves_m}},

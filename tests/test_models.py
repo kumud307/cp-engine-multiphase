@@ -162,13 +162,21 @@ def test_point_cp_equals_dH_dT(db):
 
 
 def test_ice_slurry_obeys_freezing_point_equation(db):
-    s = SystemModel(db, {"water": 0.9 / 0.018015, "ethanol": 0.1 / 0.046069}, {})
-    s.configure(263.15, 263.15)
-    liq = {k: n for name, k, st, n in s.split(263.15) if st == "liquid"}
-    x_w = liq["water"] / sum(liq.values())
+    """Default: ln(x_w γ_w) = SLE equation with the same NRTL used for H^E (HE+SLE parameter set)."""
     w = db.get("water")
     dCp = w.cp_corr["liquid"].raw(w.Tm) - w.cp_corr["solid"].raw(w.Tm)
-    assert x_w == pytest.approx(pc.ideal_solubility(263.15, w.Tm, w.dHfus, dCp), rel=1e-10)
+    n = {"water": 0.9 / 0.018015, "ethanol": 0.1 / 0.046069}
+    s = SystemModel(db, n, {})
+    s.configure(263.15, 263.15)
+    liq = {k: m for name, k, st, m in s.split(263.15) if st == "liquid"}
+    x_w = liq["water"] / sum(liq.values())
+    g_w = NRTL(["water", "ethanol"], db).gamma([x_w, 1 - x_w], 263.15)[0]
+    assert x_w * g_w == pytest.approx(pc.ideal_solubility(263.15, w.Tm, w.dHfus, dCp), rel=1e-8)
+    # forcing the ideal solution gives the textbook equation
+    s2 = SystemModel(db, n, {}, options={"sle_activity": "ideal"})
+    s2.configure(263.15, 263.15)
+    liq = {k: m for name, k, st, m in s2.split(263.15) if st == "liquid"}
+    assert liq["water"] / sum(liq.values()) == pytest.approx(pc.ideal_solubility(263.15, w.Tm, w.dHfus, dCp), rel=1e-10)
 
 
 def test_no_ice_above_liquidus(db):

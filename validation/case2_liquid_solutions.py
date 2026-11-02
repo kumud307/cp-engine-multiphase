@@ -49,7 +49,7 @@ def run(save: bool = True) -> list[dict]:
         he = binary(d, alc, "water", "HE")
         he = he[(he.x > 0.01) & (he.x < 0.99) & (he.T_K <= 383.2)]
         groups = {}
-        for label, prefer in (("NRTL (VLE parameters)", "VLE"), ("NRTL (refitted to H$^E$)", "HE")):
+        for label, prefer in (("NRTL (VLE parameters)", "VLE"), ("NRTL refitted (fit quality: these data were used in the fit; held-out tests in case 2b)", "HE")):
             m = NRTL([alc, "water"], db, prefer=prefer)
             pred = np.array([m.hE([x, 1 - x], T) for x, T in zip(he.x, he.T_K)])
             rmsd = float(np.sqrt(np.mean((pred - he.value) ** 2)))
@@ -132,7 +132,8 @@ def run(save: bool = True) -> list[dict]:
             m = NRTL(["ethanol", "water"], db, prefer=prefer)
             mc = np.array([(m.hE([x, 1 - x], 323.15) - m.hE([x, 1 - x], 298.15)) / 25.0 for x in xs])
             model_cpe[label] = mc
-            rows.append(row("2", "ethanol + water", f"mean Cp^E 298-323 K from measured H^E(T), {label}", len(xs),
+            rows.append(row("2", "ethanol + water", f"mean Cp^E 298-323 K from measured H^E(T), {label}"
+                            + (" (consistency check: data used in the fit; held-out version in case 2b)" if "refitted" in label else ""), len(xs),
                             float(np.sqrt(np.mean((mc - cpe_data) ** 2))), float(np.max(np.abs(mc - cpe_data))),
                             "doi:10.1016/j.jct.2005.06.018", metric="RMSD J/(mol K)"))
         pd.DataFrame({"x_ethanol": xs, "CpE_from_HE_data": cpe_data, **model_cpe}).to_csv(
@@ -145,6 +146,30 @@ def run(save: bool = True) -> list[dict]:
                 "x$_{\\mathrm{ethanol}}$", "C$_p^E$ / J mol$^{-1}$ K$^{-1}$",
                 "Water + ethanol: C$_p^E$ from measured H$^E$(T)", name="fig_cpE_from_HE_water_ethanol",
                 outdir=FIGS, w=4.8, legend_outside=True)
+
+    # ---- 2h: NaCl(aq) – apparent molar Cp model (tools/fit_apparent_cp.py) ---------------------------
+    na = binary(d, "NaCl", "water", "Cp_molar")
+    na = na[na.doi != "10.1016/j.jct.2018.10.027"]           # excluded as inconsistent (see the fitting tool)
+    for label, sel in (("fit points (doi:10.1021/je0502400)", na.doi == "10.1021/je0502400"),
+                       ("INDEPENDENT point (doi:10.1016/j.jct.2016.09.031)", na.doi == "10.1016/j.jct.2016.09.031")):
+        g = na[sel]
+        p = [engine.solve({"T": t, "mole_fractions": {"NaCl": x, "water": 1 - x}}).cp_molar for x, t in zip(g.x, g.T_K)]
+        a, mx, n = aard(p, g.value)
+        rows.append(row("2", "NaCl + water (brine)", f"Cp, apparent-molar-Cp model, {label}", n, a, mx, refs(g)))
+    nk = [engine.db.get("water").cp("liquid", t) * (1 - x) + engine.db.get("NaCl").cp("solid", t) * x
+          for x, t in zip(na.x, na.T_K)]
+    a, mx, n = aard(nk, na.value)
+    rows.append(row("2", "NaCl + water (brine)", "Cp, previous Neumann–Kopp model (for comparison)", n, a, mx, refs(na)))
+
+    # ---- 2i: glycerol + water – apparent molar Cp data vs the ideal fallback ------------------------
+    ph = binary(d, "glycerol", "water", "phiCp")
+    if len(ph):
+        cpw = np.array([engine.db.get("water").cp("liquid", t) for t in ph.T_K])
+        cp_data = ph.x * ph.value + (1 - ph.x) * cpw              # mixture Cp from φCp of glycerol
+        p = [engine.solve({"T": t, "mole_fractions": {"glycerol": x, "water": 1 - x}}).cp_molar
+             for x, t in zip(ph.x, ph.T_K)]
+        a, mx, n = aard(p, cp_data)
+        rows.append(row("2", "glycerol + water", "Cp (x ≤ 0.08, 278-363 K), ideal fallback", n, a, mx, refs(ph)))
 
     # ---- 2f: water + ethanol Cp – pending ----------------------------------------------------------
     exp = load("water_ethanol_cp_exp.csv")

@@ -22,7 +22,7 @@ Energies       Q [heat], W [work, W_shaft], W_pv [W_expansion], dH, dU, dS, dV
                (totals, or per kg / per mol – e.g. "2.1 kJ/kg")
 Properties     Cv, gamma [Cp/Cv], alpha, kappa_T, density [rho]
 Options        melt_width, solution_model ("auto"|"ideal"|"nrtl"),
-               sle_activity ("ideal"|"nrtl"), liquid_phases, tolerance,
+               sle_activity ("auto"|"ideal"|"nrtl"), liquid_phases, tolerance,
                nrtl_parameters ("HE" = H^E-fitted set, default | "VLE")
 
 Sign convention (IUPAC): Q > 0 is heat ADDED TO the system; W > 0 is work
@@ -272,8 +272,8 @@ def normalise(raw: dict | SystemInput, db: Database) -> NormalisedInput:
             out.options[k] = d[k]
     if out.options.get("solution_model", "auto") not in ("auto", "ideal", "nrtl"):
         raise InputError("solution_model must be 'auto', 'ideal' or 'nrtl'.")
-    if out.options.get("sle_activity", "ideal") not in ("ideal", "nrtl"):
-        raise InputError("sle_activity must be 'ideal' or 'nrtl'.")
+    if out.options.get("sle_activity", "auto") not in ("auto", "ideal", "nrtl"):
+        raise InputError("sle_activity must be 'auto', 'ideal' or 'nrtl'.")
     if out.options.get("nrtl_parameters", "HE") not in ("HE", "VLE"):
         raise InputError("nrtl_parameters must be 'HE' (excess-enthalpy fitted) or 'VLE'.")
 

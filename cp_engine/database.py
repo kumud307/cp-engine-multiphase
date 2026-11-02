@@ -178,7 +178,7 @@ class Component:
     dHvap: float | None = None              # J/mol
     cp_corr: dict[str, CpCorrelation] = field(default_factory=dict)
     density_models: dict[str, DensityModel] = field(default_factory=dict)
-    kappa: dict[str, float] = field(default_factory=dict)
+    kappa: dict[str, Any] = field(default_factory=dict)     # value or {'type': 'ln_poly', ...}
     raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
     # ------------------------------------------------------------------
@@ -210,11 +210,74 @@ class Component:
         return a
 
     def kappa_T(self, phase: str, T: float, P: float = P_ATM) -> float:
+        """Isothermal compressibility at 1 atm, 1/Pa (constant, or ln κ = Σ c_k T^k)."""
         if phase == "gas":
             return 1.0 / P                      # ideal gas
         if phase not in self.kappa:
             raise DataError(f"No isothermal compressibility for {self.name} ({phase}).")
-        return self.kappa[phase]
+        k = self.kappa[phase]
+        if isinstance(k, dict):                 # {"type": "ln_poly", "coeffs": [...]}
+            return math.exp(sum(c * T ** i for i, c in enumerate(k["coeffs"])))
+        return k
+
+    # ------------------------------------------------------------------
+    # Pressure dependence (all Cp correlations are for ~1 atm)
+    # ------------------------------------------------------------------
+    TAIT_C = 0.0894     # universal Tait constant (dimensionless)
+
+    def molar_volume(self, phase: str, T: float, P: float = P_ATM) -> float:
+        """Molar volume v(T, P) in m^3/mol from the Tait equation
+
+            v(T,P) = v0(T) [1 − C ln(1 + (P − P0)/(B(T) + P0))],   B(T) = C/κ_T(T) − P0
+
+        so that −(1/v)(∂v/∂P)_T = κ_T at P0. v0(T) comes from the density model at 1 atm; for a
+        constant-density phase v0(T) = v_ref exp[α (T − 298.15 K)].
+        """
+        dm = self.density_models[phase]
+        if dm.type == "constant":
+            a = dm.alpha_fixed or 0.0
+            v0 = self.MW / dm.coeffs[0] * math.exp(a * (T - 298.15))
+        else:
+            v0 = self.MW / dm(T, P_ATM)
+        if abs(P - P_ATM) < 1.0:
+            return v0
+        kT = self.kappa_T(phase, T)
+        B = self.TAIT_C / kT - P_ATM
+        return v0 * (1.0 - self.TAIT_C * math.log(1.0 + (P - P_ATM) / (B + P_ATM)))
+
+    def _p_integral(self, f, P: float, n: int = 8) -> float:
+        """∫_{P0}^{P} f(p) dp by n-point Gauss–Legendre quadrature."""
+        import numpy as np
+        x, w = np.polynomial.legendre.leggauss(n)
+        mid, half = 0.5 * (P + P_ATM), 0.5 * (P - P_ATM)
+        return half * sum(wi * f(mid + half * xi) for xi, wi in zip(x, w))
+
+    def cp_pressure_correction(self, phase: str, T: float, P: float) -> float:
+        """Cp(T,P) − Cp(T,1 atm) in J/(mol K), from the exact relation
+
+            (∂Cp/∂P)_T = −T (∂²v/∂T²)_P      [ = −T v (α² + (∂α/∂T)_P) ]
+
+        with v(T, P) from the Tait equation (molar_volume). Zero for an ideal gas.
+        """
+        if phase == "gas" or abs(P - P_ATM) < 1.0 or phase not in self.density_models:
+            return 0.0
+        h = 0.5
+        d2v = lambda p: (self.molar_volume(phase, T + h, p) - 2 * self.molar_volume(phase, T, p)
+                         + self.molar_volume(phase, T - h, p)) / h ** 2
+        return -T * self._p_integral(d2v, P)
+
+    def h_pressure_correction(self, phase: str, T: float, P: float) -> float:
+        """H(T,P) − H(T,1 atm) in J/mol, from (∂H/∂P)_T = v − T (∂v/∂T)_P.
+
+        Differentiating this with respect to T gives exactly −T∫(∂²v/∂T²)dP, i.e.
+        cp_pressure_correction(), so point and interval-mean Cp stay consistent at any P.
+        """
+        if phase == "gas" or abs(P - P_ATM) < 1.0 or phase not in self.density_models:
+            return 0.0
+        h = 0.5
+        f = lambda p: self.molar_volume(phase, T, p) - T * (self.molar_volume(phase, T + h, p)
+                                                            - self.molar_volume(phase, T - h, p)) / (2 * h)
+        return self._p_integral(f, P)
 
     def Tb_at(self, P: float) -> float | None:
         """Boiling point at pressure P from the Clausius–Clapeyron equation.
@@ -295,7 +358,7 @@ class Database:
                 source=r.get("source", ""), verify=bool(r.get("verify", False)),
                 alpha_fixed=_val(alphas.get(phase), "1/K"))
         for phase, r in d.get("kappa_T", {}).items():
-            comp.kappa[phase] = _val(r, "1/Pa")
+            comp.kappa[phase] = dict(r) if r.get("type") == "ln_poly" else _val(r, "1/Pa")
         return comp
 
     # ------------------------------------------------------------------
@@ -340,7 +403,8 @@ class Database:
                 found.append(q)
         if not found:
             return None
-        return next((p for p in found if p.get("fitted_to") == prefer), found[0])
+        # "HE" also matches "HE+SLE" (fitted jointly to excess enthalpies and freezing points)
+        return next((p for p in found if str(p.get("fitted_to", "")).startswith(prefer)), found[0])
 
     def miscibility(self, i: str, j: str) -> tuple[bool, str]:
         """Are liquids i and j miscible? Returns (miscible, reason)."""
@@ -355,6 +419,13 @@ class Database:
 
     def solubility_entry(self, solute: str, solvent: str) -> dict[str, Any] | None:
         for p in self._bin_json.get("solubility", []):
+            if p["solute"] == solute and p["solvent"] == solvent:
+                return p
+        return None
+
+    def apparent_cp_entry(self, solute: str, solvent: str) -> dict[str, Any] | None:
+        """Apparent-molar-heat-capacity model φCp(m) of an electrolyte solute in a solvent, if any."""
+        for p in self._bin_json.get("apparent_molar_cp", []):
             if p["solute"] == solute and p["solvent"] == solvent:
                 return p
         return None

@@ -27,6 +27,8 @@ if an output is already in K, compare (|Δ|/max > 2 % → inconsistency warning)
 - M = Σ xᵢMᵢ; m = nM; n = m/M; c_v = C_v,m / M; c_v = C_v / m
 
 ### Route A – property route (`system.py`, `models/`)
+- User data: `custom_components` (MW, Cp, ...) and `pure_cp` overrides build a modified copy of the database for one calculation.
+- Pressure (correlations are for 0.1 MPa): (∂Cp/∂P)_T = −T(∂²v/∂T²)_P, (∂H/∂P)_T = v − T(∂v/∂T)_P with the Tait equation v = v₀(T)[1 − C ln(1 + ΔP/(B + P₀))], C = 0.0894, B(T) = C/κ_T(T) − P₀; zero for an ideal gas.
 - Pure components: DIPPR-100 Cp = Σ Cₖ Tᵏ; DIPPR-107 Cp = C₁ + C₂[(C₃/T)/sinh(C₃/T)]² + C₄[(C₅/T)/cosh(C₅/T)]²; Shomate Cp = A + Bt + Ct² + Dt³ + E/t², t = T/1000.
 - Enthalpies (Kirchhoff): H_L(T) = ∫_{T_m}^{T} Cp_L dT; H_S(T) = −ΔH_fus + ∫_{T_m}^{T} Cp_S dT; H_G(T) = H_L(T_b) + ΔH_vap + ∫_{T_b}^{T} Cp_G dT.
 - Ideal mixture: Cp = Σ xᵢ Cpᵢ (molar) ⇔ c_p = Σ wᵢ c_p,i (mass).
@@ -39,12 +41,15 @@ if an output is already in K, compare (|Δ|/max > 2 % → inconsistency warning)
   - Model II (thermal equilibrium): c_p = [φρ_s c_p,s + (1 − φ)ρ_f c_p,f] / [φρ_s + (1 − φ)ρ_f] ≡ mass weighting.
 - Phase change:
   - Smooth melting of a pure component: f(T) = ½[1 + erf((T − T_m)/(σ√2))], σ = width/4.
-  - Solid–liquid equilibrium: ln(x_k γ_k) = −(ΔH_fus/R)(1/T − 1/T_m) + (ΔCp/R)(T_m/T − 1 − ln(T_m/T)), ΔCp = Cp,L − Cp,S at T_m (consistent with the Kirchhoff enthalpies; γ_k = 1 by default); tabulated solubility for electrolytes.
+  - Solid–liquid equilibrium: ln(x_k γ_k) = −(ΔH_fus/R)(1/T − 1/T_m) + (ΔCp/R)(T_m/T − 1 − ln(T_m/T)), ΔCp = Cp,L − Cp,S at T_m (consistent with the Kirchhoff enthalpies; γ_k from NRTL when the parameters were fitted to freezing points, else 1); tabulated solubility for electrolytes.
   - Total enthalpy: H(T) = Σ_p Σᵢ nᵢᵖ Hᵢᵖ(T) + Σ_liquid nᵖ H^E,p(T, xᵖ).
   - Apparent Cp: dH/dT = Σ nᵢᵖCpᵢᵖ (ideal) + Σ nᵖCp^E,p (excess) + Σ (∂H/∂nᵢᵖ)(dnᵢᵖ/dT) (latent);
     latent ≈ [H(T; n(T+h)) − H(T; n(T−h))]/(2h).
   - Interval mean: c̄_p = [H(T₂) − H(T₁)] / [m(T₂ − T₁)].
   - Saturated salt slurry: c_p,app = Σ wᵢ c_p,i + Δh_sol · dw_dissolved/dT.
+  - Dissolved electrolyte: Cp = n_w Cp_w° + n_s φCp(m), φCp = c₀ + d₀√m + e·m (NaCl, 298 K); excess part = n_s(φCp − Cp_s).
+  - SLE activity: γ from the same NRTL as H^E if its parameters were fitted to freezing points (default), else γ = 1.
+  - Inside a smoothed melting step: report latent heat n_k ΔH_fus/m and the mean Cp over [T_m − 5 K, T_m + 5 K] (width-independent).
 
 ### Route B – calorimetric
 - Adiabatic: Q = 0.
@@ -59,7 +64,10 @@ if an output is already in K, compare (|Δ|/max > 2 % → inconsistency warning)
 - c_p = γ c_v.
 - ΔH = ΔU + PΔV (constant P).
 
-## 4. Output
+## 4. Validation design
+- Fit quality reported separately from held-out tests: leave-one-isotherm-out (H^E), source paper held out (Cp^E), 3-fold CV (freezing points).
+
+## 5. Output
 - Candidates c_p[route]; recommended = first available of {ΔH, Cv, γ, ΔS (measured)} then {Route A mean, Route A point}.
 - Discrepancy: (c_p,route − c_p,A)/c_p,A × 100 %, comparing like with like (point/mean).
 - If no candidate: backward search over rules for minimal sets of missing base inputs.

@@ -1,0 +1,13 @@
+test,system,held_out,N,model,vle,metric,failed
+A,ethanol + water,H^E isotherm 298 K,19,80.76896015325676,299.8252944321923,RMSD J/mol,
+A,ethanol + water,H^E isotherm 323 K,15,35.07381577770209,102.43423743611166,RMSD J/mol,
+A,ethanol + water,H^E isotherm 333 K,21,29.825952086793585,75.94137101117191,RMSD J/mol,
+A,ethanol + water,H^E isotherm 363 K,20,19.024463232987774,279.8803553587033,RMSD J/mol,
+A,ethanol + water,H^E isotherm 383 K,13,35.47057839625386,412.5817153931886,RMSD J/mol,
+B,ethanol + water,mean Cp^E 298-323 K (Nagamachi paper excluded from fit),19,3.651865799997064,9.116517383706778,RMSD J/(mol K),
+C,ice + water + ethanol,"freezing points, 3-fold (1 point(s) at 56.1 wt% without a liquidus)",16,2.5088703879824834,,|ΔT| K,1.0
+D,methanol + water,H^E 290-310 K,11,95.8759514235914,185.83327193617583,RMSD J/mol,
+D,methanol + water,H^E 320-335 K,68,45.843895992817295,91.35614935905458,RMSD J/mol,
+D,methanol + water,H^E 335-350 K,10,10.19689424030481,60.78411828957286,RMSD J/mol,
+D,methanol + water,H^E 350-365 K,26,8.504803930235848,87.90577817708923,RMSD J/mol,
+D,methanol + water,H^E 365-385 K,36,53.43023034328453,224.0287684637306,RMSD J/mol,

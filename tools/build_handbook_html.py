@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 md_text = (ROOT / "docs" / "TEAM_HANDBOOK.md").read_text(encoding="utf-8")
 
 FIGS = [
+    ("fig_pressure", "Pressure dependence of liquid Cp at 298.15 K: NIST data and the Tait pressure correction."),
     ("fig_HE_water_ethanol", "Excess enthalpy of water + ethanol: the refit (solid) follows the sign change that VLE parameters (dashed) miss."),
     ("fig_cpE_from_HE_water_ethanol", "Cpᴱ of water + ethanol from measured Hᴱ(T), against the two NRTL parameter sets."),
     ("fig_cp_methanol_water", "Independent test: Cp of water + methanol (Tanaka et al. 2007) vs ideal mixture and Hᴱ-fitted NRTL."),

@@ -28,16 +28,18 @@ subset of thermodynamic information: temperature, pressure, composition in any r
 heat, work, $\Delta H$, $\Delta U$, $\Delta S$, $C_V$ or $\gamma$. Twenty-five thermodynamic relations are
 encoded as rules and evaluated by forward chaining. All routes allowed by the input are computed
 and compared, inconsistent over-specification is detected, and missing information is identified.
-The property route combines pure-component correlations, NRTL excess heat capacities obtained
-through the Gibbs--Helmholtz equation, mass-weighted phase averaging and latent contributions from
-melting, solid--liquid equilibrium and dissolution. Validation uses only published data:
-521 data points from NIST SRD~69, the NIST ThermoML archive, nanofluid calorimetry and freezing-point tables.
-Pure-liquid heat capacities agree with NIST to 0.33\,\% (AARD). NRTL parameters regressed from
-vapor--liquid equilibria underpredict the excess heat capacity of water + alcohols six-fold or more; refitting them to excess enthalpies at several temperatures reduces the excess-enthalpy
-error from 256 to \SI{28}{J.mol^{-1}} (ethanol) and the heat-capacity error of water + methanol
-from 6.5\,\% to 2.7\,\% on independent data. For 69 nanofluid points the thermal-equilibrium (mass-weighted)
-model gives 2.1\,\% AARD, against 18.5\,\% for the volume-weighted model. Freezing points of aqueous
-ethanol in the ice-slurry range are reproduced to \SI{0.84}{K}.
+The property route combines pure-component correlations corrected to pressure with the Tait equation,
+NRTL excess heat capacities obtained through the Gibbs--Helmholtz equation, an apparent-molar-heat-capacity
+model for electrolytes, mass-weighted phase averaging, and latent contributions from melting,
+solid--liquid equilibrium and dissolution. Validation uses only published data (735 points: NIST SRD~69,
+the NIST ThermoML archive, nanofluid calorimetry and freezing-point tables), and every fitted model is
+also tested on held-out data. Pure-liquid heat capacities agree with NIST to 0.33\,\% at 0.1~MPa and to
+0.39\,\% up to 100~MPa. NRTL parameters regressed from vapor--liquid equilibria underpredict the excess
+heat capacity of water + alcohols six-fold or more; parameters refitted to excess enthalpies (and, for
+water + ethanol, jointly to freezing points) reproduce held-out excess enthalpies to 46--48~\si{J.mol^{-1}},
+predict the excess heat capacity of water + ethanol from an excluded data source to \SI{3.7}{J.mol^{-1}.K^{-1}},
+and predict independent heat capacities of water + methanol to 2.7\,\%. For 69 nanofluid points the
+thermal-equilibrium (mass-weighted) model gives 2.1\,\% AARD, against 18.5\,\% for the volume-weighted model.
 }
 
 \begin{document}
@@ -71,6 +73,11 @@ the smallest sets of additional inputs that would complete a route.
 Pure-component heat capacities use DIPPR equations 100 and 107 \cite{Perry2008}, NIST Shomate equations
 for solids \cite{NISTWebBook} and the IAPWS-06 equation of state for ice \cite{Feistel2006,IAPWS2009}.
 Enthalpies follow from Kirchhoff's law along a path through the melting and boiling points.
+These correlations refer to 0.1~MPa. At other pressures the exact relations
+$(\partial C_p/\partial P)_T=-T(\partial^2 v/\partial T^2)_P$ and $(\partial H/\partial P)_T=v-T(\partial v/\partial T)_P$
+are integrated with $v(T,P)$ from the Tait equation \cite{Dymond1988},
+$v=v_0(T)[1-C\ln(1+(P-P_0)/(B+P_0))]$ with $C=0.0894$ and $B(T)=C/\kappa_T(T)-P_0$, where $\kappa_T(T)$
+is obtained from NIST data as $(C_p/C_V)/(\rho w^2)$. The correction vanishes for an ideal gas.
 
 For an ideal liquid mixture $C_p=\sum_i x_iC_{p,i}$. For a real solution the excess heat capacity
 follows from the NRTL model \cite{Renon1968} through the Gibbs--Helmholtz equation,
@@ -85,9 +92,13 @@ exact symbolic derivatives to $10^{-4}$.
 Because $C_p^E$ is a second temperature derivative of $G^E/RT$, parameters regressed from VLE data are
 not expected to reproduce it. We therefore refitted the water + ethanol and water + methanol parameters
 to measured excess enthalpies at 298--383~K \cite{Nagamachi2006,Brandt2014,Modaresifar2017,Dettmann2006,Behbehani2006}
-taken from the NIST ThermoML archive \cite{ThermoMLArchive}. Candidate parameter sets
-($\alpha = 0.2$--0.47, with and without $e_{ij}$) were accepted only if $\Delta G_\mathrm{mix}/RT$ remained convex
-in composition between 240 and 390~K, i.e.\ if the model predicted no spurious liquid--liquid split.
+taken from the NIST ThermoML archive \cite{ThermoMLArchive}. For water + ethanol the fit also includes
+the freezing points of the solution \cite{Lange1967} through the solid--liquid equilibrium condition,
+eq~\ref{eq:sle}, so that the same liquid model describes the heat of mixing and the ice--solution equilibrium of
+ice slurries. Candidate parameter sets ($\alpha = 0.2$--0.47, with and without $e_{ij}$) were accepted only if
+$\Delta G_\mathrm{mix}/RT$ remained convex in composition between 220 and 390~K, i.e.\ if the model
+predicted no spurious liquid--liquid split. Every fit was cross-validated by repeating it with one
+isotherm, one source paper, or one third of the freezing points left out and predicting the left-out data.
 
 In a heterogeneous mixture enthalpy is additive over phases, so $c_p=\sum_p w_p c_{p,p}$ with mass
 fractions $w_p$. For a nanofluid with particle volume fraction $\phi$ this is identical to the
@@ -98,6 +109,10 @@ c_p=\frac{\phi\rho_s c_{p,s}+(1-\phi)\rho_f c_{p,f}}{\phi\rho_s+(1-\phi)\rho_f},
 whereas the volume-weighted Model I, $c_p=\phi c_{p,s}+(1-\phi)c_{p,f}$ \cite{Pak1998}, weights a quantity
 defined per unit mass by a volume fraction and is inconsistent unless $\rho_s=\rho_f$.
 
+For electrolyte solutions the salt is described by its apparent molar heat capacity,
+$C_p=n_wC_{p,w}^\circ+n_s\,{}^\phi C_p(m)$, with the Debye--H\"uckel-type form
+${}^\phi C_p=c_0+d_0\sqrt{m}+e\,m$ fitted to NaCl(aq) data at 298.15~K \cite{Tromans2005}.
+
 \subsection{Phase change and apparent heat capacity}
 The total enthalpy is $H(T)=\sum_p\sum_i n_i^pH_i^p(T)+\sum_{p\in L}n^pH^{E,p}(T,\mathbf{x}^p)$. The phase
 amounts $n_i^p(T)$ follow from (a) a smoothed melting step
@@ -106,9 +121,13 @@ equilibrium for components crystallising from a solution,
 \begin{equation}
 \ln(x_k\gamma_k)=-\frac{\Delta H_\mathrm{fus}}{R}\left(\frac1T-\frac1{T_m}\right)
 +\frac{\Delta C_p}{R}\left(\frac{T_m}{T}-1-\ln\frac{T_m}{T}\right),
+\label{eq:sle}
 \end{equation}
-where the $\Delta C_p$ term keeps the equilibrium consistent with the Kirchhoff enthalpies; or (c) tabulated
-solubility for electrolytes. The chain rule then splits the apparent heat capacity into three parts,
+where the $\Delta C_p$ term keeps the equilibrium consistent with the Kirchhoff enthalpies and
+$\gamma_k$ comes from the same NRTL model as $H^E$ when its parameters were fitted to freezing points
+(otherwise $\gamma_k=1$); or (c) tabulated solubility for electrolytes. Inside a smoothed melting step the
+point value of $c_{p,\mathrm{app}}$ depends on the assumed width; the engine then also reports the
+width-independent latent heat and the mean heat capacity over a fixed window. The chain rule then splits the apparent heat capacity into three parts,
 \begin{equation}
 c_{p,\mathrm{app}}=\frac{dH}{dT}=\underbrace{\sum n_i^pC_{p,i}^p}_{\text{ideal}}
 +\underbrace{\sum n^pC_p^{E,p}}_{\text{excess}}
@@ -124,22 +143,32 @@ $P$ and $c_p$), $c_p=\gamma c_V$ and the exact identity $c_p=c_V+Tv\alpha^2/\kap
 
 \section{Computational Details}
 The engine is written in Python (NumPy, SciPy, pandas, Matplotlib). It contains 13 components and binary
-data in JSON files, each value with its source; adding a component requires no code change. Validation
+data in JSON files, each value with its source; adding a component requires no code change, and users can
+also define components or override pure-component heat capacities for a single calculation. Validation
 data were obtained as follows:
 \begin{itemize}
-\item downloaded from NIST SRD~69 \cite{NISTFluid};
-\item extracted from the NIST ThermoML archive \cite{ThermoMLArchive}: 876 binary points, each traced to its original paper;
+\item downloaded from NIST SRD~69 \cite{NISTFluid}, including isotherms to 100~MPa;
+\item extracted from the NIST ThermoML archive \cite{ThermoMLArchive}: 1090 binary points (compositions given as mole fraction, mass fraction or molality), each traced to its original paper;
 \item digitised from the vector figures of an open-access calorimetry study \cite{OHanley2012}, reading marker coordinates from the PDF drawing commands;
 \item taken from a handbook table of freezing points \cite{Lange1967}.
 \end{itemize}
-The software passes 127 automated tests, including regression tests against these data.
+The software passes 142 automated tests, including regression tests against these data.
 
 \section{Results and Discussion}
 Table~\ref{tab:aard} summarises the validation.
 
 \subsection{Pure components}
 Over 128 NIST SRD~69 points for five liquids the AARD is 0.33\,\% (Figure~\ref{fig:pure} shows toluene,
-the worst case). The $C_V\rightarrow C_p$ route applied to NIST $c_V$ of water reproduces NIST $c_p$ to 0.12\,\%.
+the worst case). The $C_V\rightarrow C_p$ route applied to NIST $c_V$ of water reproduces NIST $c_p$ to 0.02\,\%.
+Between 0.1 and 100~MPa the heat capacity of water falls by 5\,\%; without a pressure correction the AARD
+over 48 NIST isotherm points is 1.85\,\% (maximum 5.2\,\%), with the Tait correction it is 0.39\,\%
+(maximum 1.2\,\%; Figure~\ref{fig:pressure}).
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{fig_pressure}
+  \caption{Pressure dependence of liquid heat capacity at 298.15~K: NIST SRD~69 (points) and the Tait correction (lines).}
+  \label{fig:pressure}
+\end{figure}
 
 \begin{figure}
   \includegraphics[width=\columnwidth]{val1_toluene}
@@ -150,19 +179,26 @@ the worst case). The $C_V\rightarrow C_p$ route applied to NIST $c_V$ of water r
 \subsection{Real solutions: excess enthalpy and excess heat capacity}
 With VLE-regressed NRTL parameters the excess enthalpy of water + ethanol is poorly described
 (RMSD \SI{256}{J.mol^{-1}}; Figure~\ref{fig:he}). In particular, the change of sign of $H^E$ between 298 and
-363~K is missed. The refitted parameters reduce the RMSD to \SI{28}{J.mol^{-1}}; for water + methanol the
-reduction is from 141 to \SI{23}{J.mol^{-1}}. Because two isotherms (298.15 and 323.15~K) were measured with
-the same apparatus \cite{Nagamachi2006}, their finite difference gives a model-free estimate of the mean
-$C_p^E$ of water + ethanol over that interval. This estimate peaks at \SI{14.5}{J.mol^{-1}.K^{-1}} near
-$x_\mathrm{EtOH}=0.2$ (Figure~\ref{fig:cpe}). The refitted model reproduces it with an RMSD of
-\SI{2.3}{J.mol^{-1}.K^{-1}}, whereas the VLE parameters give a peak of only about \SI{2}{J.mol^{-1}.K^{-1}}.
+363~K is missed. The refitted parameters reduce the RMSD to \SI{34}{J.mol^{-1}} (fit) and \SI{46}{J.mol^{-1}} for
+held-out isotherms; for water + methanol the values are 141, 23 and \SI{48}{J.mol^{-1}}. Because two
+isotherms (298.15 and 323.15~K) were measured with the same apparatus \cite{Nagamachi2006}, their finite
+difference gives a model-free estimate of the mean $C_p^E$ of water + ethanol over that interval, which
+peaks at \SI{14.5}{J.mol^{-1}.K^{-1}} near $x_\mathrm{EtOH}=0.2$ (Figure~\ref{fig:cpe}). Refitted
+\emph{without} that paper, the model predicts it with an RMSD of \SI{3.7}{J.mol^{-1}.K^{-1}}; the VLE
+parameters give \SI{9.1}{J.mol^{-1}.K^{-1}} and a peak of only about \SI{2}{J.mol^{-1}.K^{-1}}.
 
 The decisive test uses heat capacities that were \emph{not} used in any fit. For water + methanol at 280
 and 320~K and 0.1~MPa \cite{Tanaka2007}, the ideal-mixture rule gives 7.5\,\% AARD, the VLE-NRTL model 6.5\,\%
 and the $H^E$-refitted model 2.7\,\% (Figure~\ref{fig:meoh}). The largest remaining deviations occur at
 280~K, below the range of the excess-enthalpy data. For ethanol + toluene, for which no binary parameters
-are available, the ideal fallback underestimates $C_p$ by 8.3\,\% \cite{VegaMaza2011}. This shows the
-importance of binary caloric data; the engine warns whenever it falls back to ideal mixing.
+are available, the ideal fallback underestimates $C_p$ by 8.3\,\% \cite{VegaMaza2011}, whereas for dilute
+glycerol + water ($x\le0.08$, 278--363~K) it is adequate (0.52\,\% over 162 points \cite{Blodgett2007}). This
+shows the importance of binary caloric data; the engine warns whenever it falls back to ideal mixing.
+
+For NaCl(aq) the apparent-molar-heat-capacity model, fitted to one study \cite{Tromans2005}, predicts an
+independent measurement at 2.05~mol\,kg$^{-1}$ \cite{Gao2017} to 0.17\,\%, whereas counting the dissolved salt
+with its solid heat capacity is 2.9\,\% too high. A third data set, reported incidentally in a study of buffer
+solutions \cite{Tyunina2019}, disagrees with the dedicated study by 1.1\,\% and was excluded.
 
 \begin{figure}
   \includegraphics[width=\columnwidth]{fig_HE_water_ethanol}
@@ -197,13 +233,15 @@ Figure~\ref{fig:nano}). These results agree with the conclusions of the original
 
 \subsection{Slurries with phase change}
 The latent part of the apparent heat capacity of an ice slurry is governed by the liquidus. For 13
-freezing points of aqueous ethanol up to 30~wt\,\% \cite{Lange1967}, the ideal equation with the $\Delta C_p$
-correction gives a mean deviation of 0.84~K (1.06~K without it; Figure~\ref{fig:freeze}). NRTL activity
-coefficients, extrapolated from 298--383~K, make the prediction worse (2.1--3.3~K), so the ideal form is
-the default. Above 40~wt\,\% the liquid is deeply supercooled and all models deviate by several kelvin.
-For a 10~wt\,\% ethanol ice slurry the apparent heat capacity rises to about 70~kJ\,kg$^{-1}$\,K$^{-1}$ just below
-the liquidus and falls to the solution value above it (Figure~\ref{fig:ice}). The integral of the apparent
-heat capacity over a melting peak equals the enthalpy change to $10^{-8}$\,\% for a PCM slurry.
+freezing points of aqueous ethanol up to 30~wt\,\% \cite{Lange1967}, the jointly fitted NRTL model gives a
+mean deviation of 1.7~K (2.5~K in threefold cross-validation; Figure~\ref{fig:freeze}). The
+parameter-free ideal equation with the $\Delta C_p$ correction is more accurate (0.84~K; 1.06~K without
+$\Delta C_p$) but treats the liquid inconsistently with its excess enthalpy; we use the consistent model by
+default and offer the ideal form as an option. Above 40~wt\,\% the liquid is deeply supercooled and all
+models deviate by several kelvin. For a 10~wt\,\% ethanol ice slurry the apparent heat capacity rises to
+about 83~kJ\,kg$^{-1}$\,K$^{-1}$ just below the liquidus and falls to the solution value above it
+(Figure~\ref{fig:ice}). The integral of the apparent heat capacity over a melting peak equals the enthalpy
+change to better than 0.01\,\%.
 
 \begin{figure}
   \includegraphics[width=\columnwidth]{fig_freezing_points}
@@ -232,16 +270,23 @@ heat. The recovered heat capacities agree to better than $10^{-6}$\,\%.
 \section{Conclusions}
 A rule-based engine computes the heat capacity of multiphase fluids from any consistent combination of
 thermodynamic information. It reports the derivation, compares independent routes and identifies
-missing information. Validation against 521 published data points supports four
-conclusions:
+missing information. Validation against 735 published data points, with held-out tests for every fitted
+model, supports five conclusions:
 \begin{enumerate}
-\item Pure-component and Cp--Cv relations are accurate to better than 0.5\,\%.
-\item The excess heat capacity of aqueous alcohols requires NRTL parameters fitted to excess enthalpies at several temperatures. VLE parameters underpredict it six-fold or more. With $H^E$-fitted parameters the heat capacity of water + methanol is predicted to 2.7\,\% from independent data.
+\item Pure-component and $C_p$--$C_V$ relations are accurate to better than 0.5\,\%, and to 1.2\,\% up to
+100~MPa with a Tait pressure correction.
+\item The excess heat capacity of aqueous alcohols requires NRTL parameters fitted to excess enthalpies at
+several temperatures; VLE parameters underpredict it six-fold or more. With refitted parameters the
+heat capacity of water + methanol is predicted to 2.7\,\% from independent data.
 \item Mixing rules for suspensions must use mass fractions: the volume-weighted rule errs by up to 63\,\%.
-\item The latent contribution of ice slurries follows from solid--liquid equilibrium, reproduced to better than 1~K in the useful concentration range.
+\item Dissolved electrolytes must be described by their apparent molar heat capacity (0.17\,\% for NaCl(aq)
+against 2.9\,\% for the solid-heat-capacity estimate).
+\item One NRTL model fitted jointly to excess enthalpies and freezing points describes ice slurries
+consistently, at the cost of a larger freezing-point error (2.5~K held-out) than the ideal equation (0.84~K).
 \end{enumerate}
 Remaining limitations are the need for binary caloric data, the absence of vapour--liquid equilibrium
-for mixtures and of solute partitioning in emulsions, and approximate electrolyte thermodynamics.
+for mixtures and of solute partitioning in emulsions, the lack of open calorimetric data for emulsions and
+PCM slurries, and an electrolyte model limited to NaCl at 298~K.
 
 \begin{acknowledgement}
 TODO: course instructor and teaching assistants of CL~202, IIT Gandhinagar.

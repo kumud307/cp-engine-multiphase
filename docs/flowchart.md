@@ -6,6 +6,7 @@
 - Normalise the input
   - Convert every quantity to SI units
   - Identify each component in the database (names, formulas, aliases such as ice)
+  - Add any components or pure-component heat capacities supplied by the user for this calculation
   - Convert the composition (mole, mass or volume fractions, moles, masses, solid volume fraction) into moles of each component
   - Fill one missing fraction so that the fractions add up to one
   - Convert energies given per kilogram or per mole into totals, choosing a calculation basis if no amount is given
@@ -26,8 +27,10 @@
   - Group the liquids into liquid phases (miscible liquids together, immiscible liquids separate)
   - Classify the system: ideal mixture, real liquid solution, suspension, emulsion, slurry with phase change
   - Look up the pure-component heat capacities
+  - Correct the pure-component heat capacities from atmospheric pressure to the given pressure
   - Add the excess heat capacity for each real liquid solution, using interaction parameters fitted to measured heats of mixing
   - Find how much of each component is solid, liquid or dissolved at each temperature from phase equilibrium
+  - For dissolved salts, use the measured heat capacity of the salt in solution instead of the solid value
   - Add the latent contribution of any material that changes phase
   - Weight the phases by mass
   - Report the heat capacity at a temperature, or the mean over an interval
@@ -49,5 +52,6 @@
   - Heat capacity on a mass basis and on a molar basis
   - Routes used and the chain of rules for each
   - Breakdown into ideal, excess and latent parts
+  - Near a melting point, also the latent heat and an interval-average value that do not depend on the assumed melting width
   - Warnings, assumptions and notes
 - End

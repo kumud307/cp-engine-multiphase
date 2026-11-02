@@ -125,11 +125,21 @@ class SystemModel:
         if self.width <= 0:
             raise InputError("melt_width must be positive (K).")
         self.solution_model = self.options.get("solution_model", "auto")
-        self.sle_activity = self.options.get("sle_activity", "ideal")
+        # "auto": use NRTL activity coefficients in the solid–liquid equilibrium only if the parameter
+        # set was fitted to freezing-point data (then ONE liquid model gives both H^E and the SLE);
+        # otherwise ideal (γ = 1). "ideal" / "nrtl" force the choice.
+        self.sle_activity = self.options.get("sle_activity", "auto")
         # which NRTL parameter set to use for pairs that have several: "HE" (excess-enthalpy
         # fitted – default, appropriate for caloric properties) or "VLE"
         self.nrtl_parameters = self.options.get("nrtl_parameters", "HE")
         self.log = log or Log()
+        if abs(P - P_ATM) > 1.0:
+            self.log.assume(f"P = {P / 1e5:.4g} bar: pure-component Cp and H corrected from 1 atm with the exact "
+                            "relations (∂Cp/∂P)_T = −T(∂²v/∂T²)_P and (∂H/∂P)_T = v − T(∂v/∂T)_P, v(T,P) from the "
+                            "Tait equation (validated against NIST to 1.2 % up to 100 MPa).")
+            if abs(P - P_ATM) > 1.0e8:
+                self.log.warn(f"P = {P / 1e6:.0f} MPa is beyond the 100 MPa range over which the pressure "
+                              "correction was validated against NIST isotherms.")
         self.mass = sum(n * self.comps[k].MW for k, n in self.amounts.items())
         self.moles = sum(self.amounts.values())
         self.plans: dict[str, Plan] = {}
@@ -306,6 +316,23 @@ class SystemModel:
                               f"{', '.join(members)}; ideal solution used.")
         return self._nrtl_cache[members]
 
+    def _sle_uses_gamma(self, members, k: str) -> bool:
+        """Should the solid–liquid equilibrium of component k use NRTL activity coefficients?"""
+        if self.sle_activity == "ideal":
+            return False
+        model = self._nrtl(tuple(members))
+        if model is None:
+            return False
+        if self.sle_activity == "nrtl":
+            return True
+        pairs = [p for (a, b), p in model.pair_sources.items() if k in (a, b)]
+        use = bool(pairs) and all("SLE" in str(p.get("fitted_to", "")) for p in pairs)
+        if use:
+            self.log.assume(f"Solid–liquid equilibrium of {self.comps[k].name} uses NRTL activity coefficients "
+                            "from the parameter set fitted jointly to H^E and freezing points (one consistent "
+                            "liquid model for the heat of mixing and the freezing equilibrium).")
+        return use
+
     def _dCp_fus(self, k: str) -> float:
         """ΔCp of fusion at T_m (Cp,liquid − Cp,solid), used in the solid–liquid equilibrium
         equation so that it is consistent with the Kirchhoff-law enthalpies used for H(T)."""
@@ -333,7 +360,7 @@ class SystemModel:
                 p = self.plans[k]
                 if p.behaviour == "sle_ideal":
                     x_sat = phase_change.ideal_solubility(T, c.Tm, c.dHfus, self._dCp_fus(k))
-                    if x_sat < 1.0 and self.sle_activity == "nrtl":
+                    if x_sat < 1.0 and self._sle_uses_gamma(members, k):
                         model = self._nrtl(tuple(members))
                         if model is not None:
                             tot = sum(nL.values())
@@ -414,16 +441,31 @@ class SystemModel:
                 h = pure_enthalpy(c, "solid", T, self.log) + self._dissolution_enthalpy(k)
             else:
                 h = pure_enthalpy(c, state, T, self.log)
+            h += self._p_corr(c, state, T, "H")
             self._H_cache[key] = h
         return self._H_cache[key]
+
+    def _p_corr(self, c: Component, state: str, T: float, what: str) -> float:
+        """Pressure correction of a pure-component property (correlations are for 1 atm)."""
+        if abs(self.P - P_ATM) < 1.0:
+            return 0.0
+        phase = "solid" if state == "dissolved" else state
+        try:
+            if what == "H":
+                return c.h_pressure_correction(phase, T, self.P)
+            return c.cp_pressure_correction(phase, T, self.P)
+        except DataError as exc:
+            self.log.warn(f"No pressure correction for {c.name} ({phase}): {exc} Cp taken at 1 atm.")
+            return 0.0
 
     def _pure_cp(self, k: str, state: str, T: float) -> float:
         c = self.comps[k]
         if state == "dissolved":
-            self.log.assume(f"Dissolved {c.name} contributes its solid-state Cp (Neumann–Kopp approximation); "
-                            "for electrolytes the true partial molar Cp can differ strongly.")
-            return c.cp("solid", T, self.log)
-        return c.cp(state, T, self.log)
+            if not any(self.db.apparent_cp_entry(k, j) for j in self.amounts if j != k):
+                self.log.assume(f"Dissolved {c.name} contributes its solid-state Cp (Neumann–Kopp approximation); "
+                                "for electrolytes the true partial molar Cp can differ strongly.")
+            return c.cp("solid", T, self.log) + self._p_corr(c, "solid", T, "Cp")
+        return c.cp(state, T, self.log) + self._p_corr(c, state, T, "Cp")
 
     def _liquid_groups(self, entries):
         groups: dict[str, dict[str, float]] = {}
@@ -443,7 +485,45 @@ class SystemModel:
                 tot = sum(comp_n.values())
                 x = [comp_n.get(m, 0.0) / tot for m in self.groups[gname]]
                 H += tot * model.hE(x, T)
+        H += self._electrolyte_terms(T, entries)[1]
         return H
+
+    def _electrolyte_terms(self, T: float, entries) -> tuple[float, float]:
+        """(Cp, H) corrections for dissolved electrolytes with an apparent-molar-Cp model.
+
+        Cp(solution) = n_w Cp_w + n_s φCp(m). The ideal part already counts the salt with its
+        solid Cp (Neumann–Kopp), so the correction is n_s (φCp − Cp_s). The enthalpy gets the
+        matching term n_s [φCp (T − T_ref) − (H_s(T) − H_s(T_ref))], whose T-derivative is that
+        correction, so point and interval-mean Cp stay consistent.
+        """
+        dcp = dh = 0.0
+        for name, k, state, n in entries:
+            if state != "dissolved" or n <= 0:
+                continue
+            for solvent in self.groups.get(name, []):
+                e = self.db.apparent_cp_entry(k, solvent)
+                if e is None:
+                    continue
+                n_solv = sum(m for nm, kk, st, m in entries if nm == name and kk == solvent and st == "liquid")
+                if n_solv <= 0:
+                    continue
+                mol = n / (n_solv * self.comps[solvent].MW)          # molality, mol/kg
+                c = e["coeffs"]
+                phi = c["c0"] + c["d0"] * mol ** 0.5 + c["e"] * mol
+                Tref = e.get("T_ref", 298.15)
+                comp = self.comps[k]
+                self.log.assume(f"Dissolved {comp.name}: apparent molar heat capacity φCp(m) fitted to measured "
+                                f"Cp of {comp.name}(aq) at {Tref} K ({e.get('source', '')[:60]}...).")
+                if abs(T - Tref) > 10.0:
+                    self.log.warn(f"φCp of {comp.name}(aq) is known only at {Tref} K; used at {T:.1f} K without a "
+                                  "temperature correction.")
+                if mol > e.get("m_max", 1e9) * 1.05:
+                    self.log.warn(f"{comp.name} molality {mol:.2f} mol/kg exceeds the fitted range "
+                                  f"(≤ {e['m_max']:.1f} mol/kg); φCp extrapolated.")
+                dcp += n * (phi - comp.cp("solid", T))
+                dh += n * (phi * (T - Tref) - (pure_enthalpy(comp, "solid", T) - pure_enthalpy(comp, "solid", Tref)))
+                break
+        return dcp, dh
 
     def cp_frozen(self, T: float, entries=None) -> tuple[float, float]:
         """(ideal, excess) heat capacity in J/K at fixed phase amounts."""
@@ -457,6 +537,7 @@ class SystemModel:
                 tot = sum(comp_n.values())
                 x = [comp_n.get(m, 0.0) / tot for m in self.groups[gname]]
                 excess += tot * model.cpE(x, T)
+        excess += self._electrolyte_terms(T, entries)[0]
         return ideal, excess
 
     @property
@@ -479,6 +560,24 @@ class SystemModel:
         bd = CpBreakdown(ideal, excess, latent, self.mass, self.moles, "point", T=T,
                          phase_amounts=self._amounts_table(entries))
         bd.extras.update(self._extras(T, entries))
+        # A point value inside a smoothed melting/boiling step depends on the assumed width (peak ∝ 1/width).
+        # Width-independent quantities: the latent heat of the transition, and the mean Cp over any fixed
+        # interval that contains the whole transition. Report both.
+        for p in self.plans.values():
+            Tt = p.comp.Tm if p.behaviour == "melt_smooth" else (p.comp.Tb_at(self.P) if p.behaviour == "boil_smooth" else None)
+            if Tt is not None and abs(T - Tt) < self.width:
+                dh = p.comp.dHfus if p.behaviour == "melt_smooth" else p.comp.dHvap
+                latent_per_kg = p.n * dh / self.mass
+                half = max(5.0, self.width)                   # fixed window (contains the whole step if width ≤ 5 K)
+                T1, T2 = Tt - half, Tt + half
+                mean = (self.enthalpy(T2) - self.enthalpy(T1)) / (T2 - T1) / self.mass
+                bd.extras.update(transition_latent_J_per_kg=latent_per_kg, transition_mean_cp_mass=mean,
+                                 transition_range_K=(T1, T2))
+                self.log.warn(f"T = {T:.2f} K lies inside the smoothed phase-change range of {p.comp.name} "
+                              f"(width {self.width:g} K), so this point apparent Cp depends on the assumed width. "
+                              f"Width-independent: latent heat {latent_per_kg / 1000:,.1f} kJ per kg of mixture; "
+                              f"mean Cp over [{T1:.2f}, {T2:.2f}] K = {mean:,.0f} J/(kg K). For energy balances "
+                              "give T1 and T2 spanning the whole transition.")
         return bd
 
     def cp_mean(self, T1: float, T2: float) -> CpBreakdown:

@@ -28,6 +28,7 @@ PROPS = {
     "Excess molar heat capacity, J/K/mol": ("CpE", 1.0, "J/(mol K)"),
     "Molar heat capacity at constant pressure, J/K/mol": ("Cp_molar", 1.0, "J/(mol K)"),
     "Specific heat capacity at constant pressure, J/K/kg": ("cp_mass", 1.0, "J/(kg K)"),
+    "Apparent molar heat capacity, J/K/mol": ("phiCp", 1.0, "J/(mol K)"),
 }
 
 # ThermoML common names -> database keys
@@ -102,8 +103,19 @@ def parse(path: Path):
                     T = val
                 elif kind == "ePressure":
                     P = val
-                elif kind == "eComponentComposition" and label and label.startswith("Mole fraction"):
-                    x1 = val if comp == comps[0] else 1.0 - val
+                elif kind == "eComponentComposition" and label:
+                    # convert any composition variable to the mole fraction of comps[0]
+                    i_c = 0 if comp == comps[0] else 1
+                    Mc, Mo = db.get(keys[i_c]).MW, db.get(keys[1 - i_c]).MW
+                    if label.startswith("Mole fraction"):
+                        xc = val
+                    elif label.startswith("Mass fraction"):
+                        xc = (val / Mc) / (val / Mc + (1 - val) / Mo)
+                    elif label.startswith("Molality"):             # mol of comp per kg of the other
+                        xc = val * Mo / (1 + val * Mo)
+                    else:
+                        continue
+                    x1 = xc if i_c == 0 else 1.0 - xc
             for pv in nv.findall("PropertyValue"):
                 pn = text(pv, "nPropNumber")
                 if pn in props and x1 is not None and T is not None:

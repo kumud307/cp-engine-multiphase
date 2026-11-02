@@ -44,7 +44,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -e .[dev]
 
-pytest                                   # 127 tests, ~3 s
+pytest                                   # 142 tests, ~7 s
 python validation/run_all.py             # all literature comparisons, figures and tables (~25 s)
 python -m cp_engine                      # question-and-answer mode in the terminal
 jupyter notebook notebooks/CP_Engine_Demo.ipynb
@@ -77,7 +77,7 @@ Run the notebook top to bottom beforehand so all outputs are visible. Then show:
    consistent, then compares the measured route with the model (+0.01 %). Then the deliberately
    inconsistent input, which produces a warning.
 4. **Section 8.2, nanofluid.** Model I vs Model II on the same screen.
-5. **Section 8.4, ice slurry** at −10 °C: the apparent Cp is about 15 kJ/(kg K) because ice keeps
+5. **Section 8.4, ice slurry** at −10 °C: the apparent Cp is about 13 kJ/(kg K) because ice keeps
    melting as T rises. Then the interval mean from −15 to +5 °C.
 6. **Section 10, error handling.** Typo in an input name, fractions summing to 1.2, solid water at
    350 K, energy given in kg: each gives a clear message, never a traceback.
@@ -140,9 +140,13 @@ statement, because wᵢ = xᵢMᵢ/M.
   and a test checks against exact sympy derivatives.
 * **Key finding:** NRTL parameters from VLE fitting fix Gᴱ but not its temperature derivative, so they
   predict Cpᴱ six or more times too small (about 6× for ethanol, about 9× for methanol). We refitted the parameters to measured Hᴱ
-  (`tools/fit_nrtl_he.py`) and use those by default (`nrtl_parameters="HE"`).
-* **Stability check:** the refit is accepted only if ΔG_mix/RT stays convex in x from 240 to 390 K.
+  (`tools/fit_nrtl_he.py`) and use those by default (`nrtl_parameters="HE"`). For water + ethanol the
+  set is fitted **jointly** to Hᴱ (298–383 K) and to the freezing points (222–272 K), so one liquid model
+  gives both the heat of mixing (→ Cpᴱ) and the ice–solution equilibrium (→ latent heat of ice slurries).
+* **Stability check:** the refit is accepted only if ΔG_mix/RT stays convex in x from 220 to 390 K.
   A non-convex curve would mean a false liquid–liquid split, which is wrong for water–ethanol.
+* **Held-out validation (case 2b):** every fit is repeated with part of the data left out (one isotherm,
+  one paper, or one third of the freezing points) and the left-out part is predicted.
 * Pairs without parameters are treated as ideal, with a warning.
 
 ### 5.4 Heterogeneous mixtures (`models/heterogeneous.py`, `system.py`)
@@ -165,7 +169,15 @@ statement, because wᵢ = xᵢMᵢ/M.
     f(T) = ½[1 + erf((T − T_m)/(σ√2))], σ = width/4. The peak area is exactly ΔH_fus.
   * **Solid in equilibrium with its solution** (ice in aqueous ethanol): ln(x γ) = −(ΔH_fus/R)(1/T − 1/T_m)
     + (ΔCp/R)(T_m/T − 1 − ln(T_m/T)). The ΔCp term keeps this consistent with the Kirchhoff enthalpies.
+    γ comes from the **same NRTL** as Hᴱ when the parameter set was fitted to freezing points
+    (`sle_activity="auto"`, default); `sle_activity="ideal"` forces γ = 1.
   * **Salt in its saturated solution**: tabulated solubility, with cp_app = Σ wᵢcpᵢ + Δh_sol·dw_dissolved/dT.
+* **Electrolytes (NaCl in water):** Cp(solution) = n_w Cp_w + n_s φCp(m), with the apparent molar heat
+  capacity φCp = c₀ + d₀√m + e·m (Debye–Hückel form) fitted to measured brine Cp. Dissolved salt *lowers*
+  Cp (φCp < 0 at low m), which the old solid-Cp (Neumann–Kopp) estimate missed by 3 %.
+* **Point vs interval near a melting point:** inside a smoothed melting step the point Cp depends on the
+  assumed width (peak ∝ 1/width). The engine warns and also reports two width-independent numbers: the
+  latent heat of the transition and the mean Cp over a fixed window.
 * **Interval mean:** cp = [H(T2) − H(T1)]/[m(T2 − T1)]. This includes all latent heat in the interval and
   does not depend on the smoothing width.
 
@@ -177,7 +189,21 @@ statement, because wᵢ = xᵢMᵢ/M.
 * ΔS route: at constant P with constant cp and no phase change, ΔS = m cp ln(T2/T1).
 * Mixture α and κ_T come from volume-fraction averaging (ideal volume of mixing).
 
-### 5.7 Solver (`solver.py`)
+### 5.7 Pressure (`database.py`)
+* All Cp correlations are for 1 atm. At other pressures the engine uses the exact relations
+  **(∂Cp/∂P)_T = −T(∂²v/∂T²)_P** and **(∂H/∂P)_T = v − T(∂v/∂T)_P**, with v(T, P) from the **Tait equation**
+  v = v₀(T)[1 − C ln(1 + ΔP/(B + P₀))], C = 0.0894, B(T) = C/κ_T(T) − P₀.
+* κ_T(T) for water, methanol, hexane, toluene and dodecane comes from NIST (κ_T = (Cp/Cv)/(ρw²)).
+* For an ideal gas α = 1/T makes the correction exactly zero, as it should.
+* Validated against NIST isotherms 0.1–100 MPa: AARD 0.39 % (max 1.2 %), against 1.85 % (max 5.2 %)
+  without the correction. Water at 500 bar: 4056 J/(kg K) vs NIST 4060.
+
+### 5.8 User-supplied data (`custom.py`)
+* `custom_components={"ethylene glycol": {"MW": "62.07 g/mol", "cp": "2.43 kJ/(kg K)", ...}}` adds a
+  component for one calculation; `pure_cp={"water": "4.18 kJ/(kg K)"}` overrides a database Cp.
+  The database files are never changed.
+
+### 5.9 Solver (`solver.py`)
 * Each rule fires at most once. "Check" rules also fire when their output is already known, and
   compare the two values (tolerance 2 %).
 * Recommended value: measured routes (ΔH, Cv, γ, ΔS) take precedence over the model. The model
@@ -186,27 +212,38 @@ statement, because wᵢ = xᵢMᵢ/M.
 
 ## 6. Validation: what we can claim (all against real data)
 
+"Fit" means the data were used to fit parameters; "held-out" and "independent" mean they were not.
+
 | # | Test | Result | What it shows |
 |---|---|---|---|
 | 1 | 5 pure liquids vs NIST SRD 69 (128 points) | AARD 0.33 %, max 1.25 % | The pure-component data are correct |
-| 1 | Water: cp from NIST cv via cp = cv + Tvα²/κ_T | AARD 0.12 % | The Cp–Cv identity and our α, κ_T are right |
-| 2 | Water + ethanol Hᴱ (88 points, 298–383 K) | RMSD 256 → **28 J/mol** after refit | VLE parameters are not caloric parameters |
-| 2 | Water + ethanol Cpᴱ derived from measured Hᴱ(T) | RMSD 9.1 → **2.3 J/(mol K)** | The refit captures Cpᴱ (peak ≈ 14.5 J/(mol K)) |
+| 1 | 5 liquids at 0.1–100 MPa vs NIST (48 points) | **0.39 %** with Tait correction (1.85 % without) | The pressure correction works |
+| 1 | Water: cp from NIST cv via cp = cv + Tvα²/κ_T | AARD 0.02 % | The Cp–Cv identity and our α, κ_T are right |
+| 2 | Water + ethanol Hᴱ (88 points) | fit 34 J/mol; **held-out 46 J/mol**; VLE parameters 256 | VLE parameters are not caloric parameters |
+| 2 | Water + methanol Hᴱ (151 points) | fit 23 J/mol; **held-out 48 J/mol**; VLE 141 | Same for methanol |
+| 2b | Water + ethanol Cpᴱ, source paper held out of the fit | **3.7 J/(mol K)** RMSD (VLE 9.1); peak ≈ 14.5 | Genuine prediction of Cpᴱ |
 | 2 | Water + methanol Cp (independent data) | ideal 7.5 %, VLE-NRTL 6.5 %, **Hᴱ-NRTL 2.7 %** | Gibbs–Helmholtz route to Cpᴱ works |
+| 2 | NaCl brine Cp, independent point | **0.17 %** (old Neumann–Kopp model 2.9 %) | Electrolyte model works |
+| 2 | Glycerol + water Cp, 162 points (x ≤ 0.08) | 0.52 % with the ideal fallback | Ideal mixing is adequate for dilute glycerol |
 | 2 | Ethanol + toluene Cp, no parameters | 8.3 % (ideal fallback) | Honest limitation: missing binary data |
 | 3 | Nanofluids, 69 DSC points (Al₂O₃, CuO, SiO₂) | **Model II 2.1 %**, Model I 18.5 % (max 63 %) | Mass weighting is right; Model I is wrong |
-| 4 | Freezing points, water + ethanol ≤ 30 wt% | **0.84 K** mean (ideal + ΔCp) | The SLE model behind ice-slurry Cp works |
-| 4 | Energy conservation through melting peaks | 10⁻⁸ % (PCM), 0.1 % (ice slurry, grid) | Latent heat is neither lost nor double-counted |
-| 5 | Route A → Q → Route B, 7 systems | 6×10⁻⁷ % | The routes are mutually consistent |
+| 4 | Freezing points ≤ 30 wt% ethanol | consistent NRTL: fit 1.7 K, **held-out 2.5 K**; ideal + ΔCp 0.84 K | The SLE behind ice-slurry Cp works |
+| 4 | Energy conservation through melting peaks | ≤ 0.006 % | Latent heat is neither lost nor double-counted |
+| 5 | Route A → Q → Route B, 7 systems | < 10⁻⁶ % | The routes are mutually consistent |
 
 What to say about the less good numbers:
 * *Glycerol 2.4 % at 55 °C:* the literature values themselves scatter by 1.4 % at 25 °C.
-* *Methanol–water at 280 K overshoots at high x:* 280 K is below the fitted range (298–378 K).
-* *Freezing points above 40 wt% ethanol are off by up to 19 K:* the liquid is then deeply supercooled
-  (−30 to −50 °C), far outside the range of the liquid-water Cp correlation, and ΔCp is not constant there.
-  Ice slurries are used at 5–30 wt%, where the error is under 1 K.
-* *NRTL activity coefficients make freezing points worse:* the parameters are fitted at 298–383 K and
-  extrapolated to 220–270 K, so the engine uses ideal SLE by default.
+* *Methanol–water at 280 K overshoots at high x:* 280 K is below the Hᴱ data range (298–378 K).
+* *Held-out errors are larger than fit errors* (46 vs 34 J/mol): that is normal and is exactly why we report them.
+* *The ideal + ΔCp freezing equation (0.84 K) beats the consistent NRTL (2.5 K held-out):* NRTL with 6
+  parameters must describe Gᴱ from 220 to 383 K. We chose consistency (one liquid model for Hᴱ and the
+  freezing equilibrium) as the default; `sle_activity="ideal"` gives the more accurate freezing point.
+* *Freezing points above 40 wt% ethanol are off by several kelvin:* the liquid is deeply supercooled
+  (−30 to −50 °C), far outside the range of the liquid-water Cp data. Ice slurries use 5–30 wt%.
+* *Dodecane under pressure:* 0.62 % with the correction vs 0.21 % without (only 5 points up to 40 MPa);
+  for the other four liquids the correction cuts the error 2–18-fold.
+* *One NaCl dataset was excluded* (a buffer study whose NaCl values disagree with the dedicated study by
+  1.1 %); the reason is written in `tools/fit_apparent_cp.py`.
 
 ## 7. Where the data came from (short version; full detail in `docs/DATA_SOURCES.md`)
 
@@ -217,16 +254,23 @@ What to say about the less good numbers:
 * **Implemented a standard:** IAPWS R10-06 for ice, checked to 9 digits against the official test values.
 * **Corrected during verification:** acetone–water NRTL (i and j swapped), glycerol Cp (4 % high),
   ice Cp (1.4 % low), CuO range, solid densities, NaCl solubility.
-* **Open:** 39 low-impact flags (`docs/DATA_TO_VERIFY.md`); direct Cp data for water + ethanol (paywalled).
+* **Pressure and electrolyte data:** NIST isotherms (0.1–100 MPa) for 5 liquids; NaCl(aq) Cp and glycerol
+  apparent molar Cp from the ThermoML archive (molality data are now converted too).
+* **Open:** low-impact flags (`docs/DATA_TO_VERIFY.md`); direct Cp data for water + ethanol (paywalled).
 
 ## 8. Limitations (say these before you are asked)
 
-1. Cpᴱ needs binary parameters. Without them the engine falls back to an ideal mixture and warns (8 % error for ethanol + toluene).
+1. Cpᴱ needs binary parameters. Three pairs are validated (water + ethanol and water + methanol fitted;
+   for dilute water + glycerol ideal mixing is adequate). Without parameters the engine falls back to
+   ideal mixing and warns (8 % error for ethanol + toluene).
 2. No vapour–liquid equilibrium for mixtures. Boiling of a mixture inside the interval is flagged, not computed.
-3. No solute partitioning between two liquid phases in emulsions.
-4. Electrolytes: dissolved NaCl uses its solid Cp (Neumann–Kopp approximation) and ideal colligative behaviour.
-5. Ideal volume of mixing for ρ, α and κ_T of mixtures; interfacial energy of nanoparticles is neglected.
-6. Pure-component melting is smoothed over a finite width. The *interval-mean* Cp does not depend on that width.
+3. No solute partitioning between two liquid phases in emulsions; no experimental validation for emulsions
+   or PCM slurries (no open DSC data found) beyond the energy-conservation checks.
+4. Electrolytes: only NaCl has an apparent-molar-Cp model, at 298 K (the engine warns elsewhere).
+5. Pressure correction validated to 100 MPa for 5 liquids; other components use a constant κ_T.
+6. Ideal volume of mixing for ρ, α and κ_T of mixtures; interfacial energy of nanoparticles is neglected.
+7. Pure-component melting is smoothed over a finite width; point values inside the step depend on it
+   (the engine warns and reports the width-independent latent heat and window mean).
 
 ## 9. Questions the professor may ask, with answers
 
@@ -295,7 +339,7 @@ What to say about the less good numbers:
     By differencing H only with respect to the phase amounts: H(T; n(T±h)), with properties frozen at T.
     H is then linear in n, so there is no integration noise.
 21. **How did you test the code?**
-    127 pytest tests: units, limits (φ→0, φ→1, xᵢ→1, Cpᴱ→0 at the pure ends), ideal reduction,
+    142 pytest tests: units, limits (φ→0, φ→1, xᵢ→1, Cpᴱ→0 at the pure ends), ideal reduction,
     bad input, N = 2, 3 and 5 components, all routes, round trips, and regression tests against the
     literature data.
 22. **What happens with bad input?**
@@ -316,6 +360,30 @@ What to say about the less good numbers:
 26. **What errors did you find in your own data?**
     The acetone–water NRTL parameters had i and j swapped. We caught it by checking infinite-dilution
     activity coefficients. Glycerol Cp and ice Cp correlations were also replaced. See DATA_SOURCES §5.
+
+### Questions from our own mock review (prepare these)
+27. **"Change P to 500 bar. Does Cp change? Derive (∂Cp/∂P)_T."**
+    From dH = Cp dT + [v − T(∂v/∂T)_P] dP and the equality of mixed second derivatives,
+    (∂Cp/∂P)_T = −T(∂²v/∂T²)_P. We evaluate v(T,P) with the Tait equation. Water at 500 bar: 4056 J/(kg K)
+    (NIST 4060), 3 % below the 1-atm value. For an ideal gas the correction is exactly zero.
+28. **"Your Cpᴱ test uses data you fitted to. How is that validation?"**
+    In the main table it is labelled a consistency check. Case 2b repeats the fit *without* that paper and
+    predicts its Cpᴱ: RMSD 3.7 J/(mol K), against 9.1 for VLE parameters. All fitted sets also have
+    leave-one-isotherm-out tests.
+29. **"Why does the ice-slurry equilibrium use γ = 1 when the enthalpy uses NRTL?"**
+    It no longer does. The water + ethanol parameters were fitted jointly to Hᴱ and freezing points, and the
+    same NRTL gives γ in the equilibrium (`sle_activity="auto"`). The price: held-out freezing-point error
+    2.5 K instead of 0.84 K for the simple ideal equation, which remains available as an option.
+30. **"Your brine Cp was 2 % high."**
+    Dissolved NaCl has a negative apparent molar heat capacity (it orders the water around the ions), so the
+    solid-Cp estimate is wrong. The engine now uses φCp(m) fitted to a dedicated study and is within 0.17 %
+    of an independent measurement.
+31. **"Can I use a component that is not in your database?"**
+    Yes: `custom_components` (MW and Cp at minimum) or `pure_cp` to override a value, for that calculation only.
+32. **"The PCM Cp at 301.3 K changes 8-fold with the melt width. Which is right?"**
+    Neither number is physical on its own; a pure substance has an infinite Cp at T_m. The engine warns and
+    reports the width-independent latent heat (48.5 kJ per kg of slurry) and the mean Cp over a fixed window.
+    For design, use T1–T2 spanning the melting range.
 
 ## 10. Glossary
 

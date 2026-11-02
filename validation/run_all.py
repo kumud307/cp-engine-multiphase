@@ -12,6 +12,7 @@ import pandas as pd
 
 import case1_pure_components
 import case2_liquid_solutions
+import case2b_crossvalidation
 import case3_nanofluid
 import case4_phase_change
 import case5_route_consistency
@@ -50,10 +51,15 @@ def condensed(df: pd.DataFrame) -> pd.DataFrame:
     c1p = ok[(ok.case == "1") & ok.quantity.str.contains("point")]
     rows.append({"case": "1", "what": "4 compounds, literature point values", "metric": "AARD %",
                  "N": c1p.N.sum(), "mean": (c1p["mean"] * c1p.N).sum() / c1p.N.sum(), "max": c1p["max"].max()})
+    for tag, label in (("Tait pressure correction", "5 liquids, cp at 0.1-100 MPa (Tait pressure correction)"),
+                       ("without pressure correction", "5 liquids, cp at 0.1-100 MPa, no pressure correction")):
+        c = ok[(ok.case == "1") & ok.quantity.str.contains(tag, regex=False)]
+        rows.append({"case": "1", "what": label, "metric": "AARD %", "N": c.N.sum(),
+                     "mean": (c["mean"] * c.N).sum() / c.N.sum(), "max": c["max"].max()})
     for _, r in ok[(ok.case == "1") & ok.quantity.str.contains("cv")].iterrows():
         rows.append({"case": "1", "what": "water: cp from NIST cv, cp = cv + Tvα²/κ T", "metric": r.metric,
                      "N": r.N, "mean": r["mean"], "max": r["max"]})
-    for _, r in ok[ok.case.isin(["2", "3"])].iterrows():
+    for _, r in ok[ok.case.isin(["2", "2b", "3"])].iterrows():
         if r.case == "3" and r.system != "all nanofluids":
             continue
         rows.append({"case": r.case, "what": f"{r.system}: {r.quantity}", "metric": r.metric, "N": r.N,
@@ -81,8 +87,8 @@ def write_tex(df: pd.DataFrame, path, what_col: str) -> None:
 
 def main(save: bool = True) -> pd.DataFrame:
     rows = []
-    for mod in (case1_pure_components, case2_liquid_solutions, case3_nanofluid, case4_phase_change,
-                case5_route_consistency):
+    for mod in (case1_pure_components, case2_liquid_solutions, case2b_crossvalidation, case3_nanofluid,
+                case4_phase_change, case5_route_consistency):
         print(f"Running {mod.__name__} ...")
         rows += mod.run(save=save)
     df = pd.DataFrame(rows)

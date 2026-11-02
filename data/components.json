@@ -138,9 +138,16 @@
       },
       "kappa_T": {
         "liquid": {
-          "value": 4.505e-10,
+          "type": "ln_poly",
+          "coeffs": [
+            -16.426265,
+            -0.031583161,
+            4.8748616e-05
+          ],
           "unit": "1/Pa",
-          "source": "Derived from NIST SRD 69 at 300 K: kappa_T = (Cp/Cv)/(rho w^2) (validation/_clean_nist.py)",
+          "Tmin": 275.0,
+          "Tmax": 370.0,
+          "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 1.26 %",
           "verify": false
         },
         "solid": {
@@ -339,9 +346,16 @@
       },
       "kappa_T": {
         "liquid": {
-          "value": 1.28e-09,
+          "type": "ln_poly",
+          "coeffs": [
+            -22.33302,
+            0.0055477277,
+            2.1801574e-06
+          ],
           "unit": "1/Pa",
-          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "Tmin": 200.0,
+          "Tmax": 335.0,
+          "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 0.81 %",
           "verify": false
         }
       }
@@ -612,9 +626,16 @@
       },
       "kappa_T": {
         "liquid": {
-          "value": 1.731e-09,
+          "type": "ln_poly",
+          "coeffs": [
+            -21.928166,
+            0.0019885457,
+            1.2892078e-05
+          ],
           "unit": "1/Pa",
-          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "Tmin": 200.0,
+          "Tmax": 340.0,
+          "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 0.62 %",
           "verify": false
         }
       }
@@ -707,9 +728,16 @@
       },
       "kappa_T": {
         "liquid": {
-          "value": 9.329e-10,
+          "type": "ln_poly",
+          "coeffs": [
+            -22.388482,
+            0.0033373457,
+            6.6185774e-06
+          ],
           "unit": "1/Pa",
-          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "Tmin": 200.0,
+          "Tmax": 380.0,
+          "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 0.83 %",
           "verify": false
         }
       }
@@ -786,9 +814,16 @@
       },
       "kappa_T": {
         "liquid": {
-          "value": 1.008e-09,
+          "type": "ln_poly",
+          "coeffs": [
+            -21.857747,
+            0.0011070071,
+            8.9614088e-06
+          ],
           "unit": "1/Pa",
-          "source": "Derived from NIST SRD 69 at 300 K: (Cp/Cv)/(rho w^2)",
+          "Tmin": 265.0,
+          "Tmax": 480.0,
+          "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 1.72 %",
           "verify": false
         }
       }

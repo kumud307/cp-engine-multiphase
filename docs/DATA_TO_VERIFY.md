@@ -13,6 +13,8 @@ Full provenance of every dataset: `docs/DATA_SOURCES.md`.
 - Solid densities, NaCl solubility table and heat of solution: CRC values.
 - NRTL ethanol–water and methanol–water (VLE sets): against the published table. Hᴱ-fitted sets: fitted by us to NIST ThermoML data.
 - Tm, ΔH_fus, Tb, ΔH_vap of the organic liquids: NIST phase-change pages.
+- κ_T(T) of water, methanol, n-hexane, toluene, n-dodecane: fitted to NIST; the pressure correction built on it matches NIST isotherms to 1.2 % up to 100 MPa.
+- NaCl(aq) apparent molar heat capacity: fitted to Tromans et al. 2005; independent check 0.17 %; one inconsistent dataset excluded.
 
 **Corrected during verification:** acetone–water NRTL orientation (i/j swapped), glycerol Cp (4 % high),
 ice Cp (1.4 % low), CuO valid range, solid densities, NaCl solubility table.

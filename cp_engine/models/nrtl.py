@@ -216,3 +216,70 @@ def fit_nrtl_to_excess(x1: Sequence[float], T: Sequence[float], values: Sequence
     return {"a_ij": q["a12"], "a_ji": q["a21"], "b_ij": q["b12"], "b_ji": q["b21"],
             "e_ij": q["e12"], "e_ji": q["e21"], "f_ij": q["f12"], "f_ji": q["f21"],
             "c": alpha, "d": 0.0, "fitted_to": kind, "rmse": rmse, "success": bool(res.success)}
+
+
+def fit_nrtl_joint(he: tuple, sle: tuple | None = None, alpha: float = 0.3,
+                   fit: Sequence[str] = ("a12", "a21", "b12", "b21", "e12", "e21"),
+                   initial: dict | None = None, sigma_he: float = 30.0, sigma_sle: float = 0.01,
+                   cpe: tuple | None = None, sigma_cpe: float = 0.5) -> dict:
+    """Fit binary NRTL parameters to excess enthalpies and (optionally) solid–liquid equilibrium data.
+
+    he  = (x1, T, H^E in J/mol)
+    cpe = (x1, T, Cp^E in J/(mol K)), optional excess heat capacities
+    sle = (x1, T_freeze, Tm, dHfus, dCp, k): freezing points where pure component k (0 or 1)
+          crystallises; residual = [ln x_k + ln γ_k(x, T) − sle_rhs(T)] / sigma_sle
+          (sigma_sle = 0.01 in ln x corresponds to about 1 K for ice).
+    Fitting both data types makes ONE liquid model describe the heat of mixing (→ Cp^E) and the
+    freezing equilibrium (→ latent heat of ice slurries) consistently.
+    """
+    from scipy.optimize import least_squares
+    from .phase_change import sle_rhs
+
+    x1, T, H = (np.asarray(v, dtype=float) for v in he)
+    init = {k: 0.0 for k in ("a12", "a21", "b12", "b21", "e12", "e21", "f12", "f21")}
+    init.update(initial or {})
+
+    def model(p):
+        q = dict(init)
+        q.update(dict(zip(fit, p)))
+        mats = {s: np.array([[0.0, q[f"{s}12"]], [q[f"{s}21"], 0.0]]) for s in ("a", "b", "e", "f")}
+        mats["c"] = np.full((2, 2), alpha)
+        return NRTL(["1", "2"], params=mats), q
+
+    def resid(p):
+        m, _ = model(p)
+        r = [(m.hE([x, 1 - x], t) - v) / sigma_he for x, t, v in zip(x1, T, H)]
+        if cpe is not None:
+            r += [(m.cpE([x, 1 - x], t) - v) / sigma_cpe for x, t, v in zip(*cpe)]
+        if sle is not None:
+            xs, Ts, Tm, dH, dCp, k = sle
+            for x, t in zip(xs, Ts):
+                xv = [x, 1 - x]
+                r.append((np.log(xv[k]) + m.ln_gamma(xv, t)[k] - sle_rhs(t, Tm, dH, dCp)) / sigma_sle)
+        return np.array(r)
+
+    res = least_squares(resid, x0=[init[k] for k in fit], max_nfev=600)
+    m, q = model(res.x)
+    rmse = float(np.sqrt(np.mean([(m.hE([x, 1 - x], t) - v) ** 2 for x, t, v in zip(x1, T, H)])))
+    return {"a_ij": q["a12"], "a_ji": q["a21"], "b_ij": q["b12"], "b_ji": q["b21"], "e_ij": q["e12"],
+            "e_ji": q["e21"], "f_ij": q["f12"], "f_ji": q["f21"], "c": alpha, "d": 0.0,
+            "fitted_to": "HE" + ("+CpE" if cpe is not None else "") + ("+SLE" if sle is not None else ""),
+            "rmse": rmse, "success": bool(res.success),
+            "model": m}
+
+
+def fit_nrtl_best(he: tuple, sle: tuple | None, initial: dict, alphas=(0.2, 0.3, 0.4, 0.47),
+                  forms=(("a12", "a21", "b12", "b21"), ("a12", "a21", "b12", "b21", "e12", "e21")),
+                  T_stable=(220, 390), cpe: tuple | None = None) -> dict:
+    """Try several α values and τ(T) forms; keep the lowest-H^E-error set that is phase-stable
+    (no liquid–liquid split) over T_stable. Returns the fit dict (see fit_nrtl_joint)."""
+    best = None
+    for alpha in alphas:
+        for form in forms:
+            f = fit_nrtl_joint(he, sle, alpha, form, initial, cpe=cpe)
+            if all(f["model"].is_stable_binary(T, 600) for T in range(T_stable[0], T_stable[1] + 1, 10)):
+                if best is None or f["rmse"] < best["rmse"]:
+                    best = f
+    if best is None:
+        raise ValueError("no phase-stable NRTL parameter set found")
+    return best

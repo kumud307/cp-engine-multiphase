@@ -45,6 +45,30 @@ def run(save: bool = True) -> list[dict]:
         ref = "NIST WebBook" + (" + O'Hanley et al. 2012" if g.reference.str.contains("O'Hanley").any() else "")
         rows.append(row("1", f"{comp} ({phase})", "Cp (point values)", n, a, mx, ref))
 
+    # pressure dependence: NIST isotherms at 298.15 K, 0.1-100 MPa
+    if save:
+        from cp_engine.plotting import plot_data_vs_models
+        groups = {}
+        for name in ("water", "methanol", "n-hexane", "toluene"):
+            iso = load(f"nist_{name}_298K_isotherm.csv")
+            P = np.linspace(0.1, 100.0, 41)
+            cp0 = db.get(name).cp_mass("liquid", 298.15)
+            tait = [engine.solve({"T": 298.15, "P": (p, "MPa"), "components": {name: "liquid"}}).cp_mass / cp0 for p in P]
+            groups[name] = {"data": (iso.P_MPa, iso.cp_J_kgK / cp0),
+                            "models": {"Tait pressure correction": (P, tait), "no correction": (P, [1.0] * len(P))}}
+        plot_data_vs_models(groups, "P / MPa", r"c$_p$(P) / c$_{p,\mathrm{model}}$(0.1 MPa)", "Pressure dependence at 298.15 K (NIST)",
+                            name="fig_pressure", outdir=FIGS, w=4.8, legend_outside=True)
+    for name in FLUIDS:
+        iso = load(f"nist_{name}_298K_isotherm.csv")
+        pred = [engine.solve({"T": t, "P": (P, "MPa"), "components": {name: "liquid"}}).cp_mass
+                for t, P in zip(iso.T_K, iso.P_MPa)]
+        a, mx, n = aard(pred, iso.cp_J_kgK)
+        rows.append(row("1", name, "cp vs pressure 0.1-100 MPa (Tait pressure correction)", n, a, mx, "NIST SRD 69"))
+        p0 = engine.solve({"T": 298.15, "components": {name: "liquid"}}).cp_mass
+        a0, mx0, _ = aard([p0] * len(iso), iso.cp_J_kgK)
+        rows.append(row("1", name, "cp vs pressure 0.1-100 MPa, without pressure correction (for comparison)",
+                        n, a0, mx0, "NIST SRD 69"))
+
     # Cv -> Cp route for water with NIST cv
     d = load("nist_water_1atm.csv")
     cp_from_cv = [engine.solve({"T": t, "Cv": (cv, "J/(kg K)"), "components": ["water"]})
