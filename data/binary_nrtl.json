@@ -62,8 +62,8 @@
       "Tmax": 373.15,
       "T_range_note": "ASSUMED range (typical isobaric VLE data); check the original regression range",
       "fitted_to": "VLE",
-      "source": "Aspen Plus databank (DDB-regressed VLE), as tabulated in the NRTL appendix reproduced in BIT Mesra CAPE notes; orientation corrected 2026-11-02 (gamma_inf acetone in water = 5.8, water in acetone = 3.6 at 298 K)",
-      "verify": true
+      "source": "Aspen Plus databank (DDB-regressed VLE), as tabulated in the NRTL appendix reproduced in BIT Mesra CAPE notes; orientation corrected 2026-11-02 (gamma_inf acetone in water = 5.8, water in acetone = 3.6 at 298 K); tested 2026-11-05 against measured gamma_inf of acetone in water (doi:10.1021/je0495942, doi:10.1021/je049875+): 25 % low but correct temperature trend (the opposite sign of b gives the wrong trend); not phase-stable above 360 K (the engine warns)",
+      "verify": false
     },
     {
       "i": "ethanol",
@@ -84,7 +84,7 @@
       "rmse_HE_J_per_mol": 33.8,
       "rmse_HE_VLE_parameters": 256.0,
       "n_points": 105,
-      "source": "Fitted (tools/fit_nrtl_he.py) to measured H^E from the NIST ThermoML archive: 10.1016/j.fluid.2007.06.007; 10.1016/j.fluid.2014.05.031; 10.1016/j.jct.2005.06.018; 10.1016/j.tca.2017.05.023 and to the freezing points of aqueous ethanol 2.5-56 wt% (Lange 1967). Phase-stable (no liquid-liquid split) from 220 to 390 K.",
+      "source": "Fitted (tools/fit_nrtl_he.py) to measured H^E from the NIST ThermoML archive: 10.1016/j.fluid.2007.06.007; 10.1016/j.fluid.2014.05.031; 10.1016/j.jct.2005.06.018; 10.1016/j.tca.2017.05.023 and to the freezing points of aqueous ethanol 2.5-56 wt% (Lange 1967) and to measured activity coefficients of ethanol at infinite dilution in water (doi:10.1021/je0495942; doi:10.1021/je049875+). Phase-stable (no liquid-liquid split) from 220 to 390 K.",
       "verify": false
     },
     {
@@ -107,6 +107,28 @@
       "rmse_HE_VLE_parameters": 140.8,
       "n_points": 151,
       "source": "Fitted (tools/fit_nrtl_he.py) to measured H^E from the NIST ThermoML archive: 10.1016/j.jct.2005.03.012; 10.1016/j.tca.2006.02.028. Phase-stable (no liquid-liquid split) from 220 to 390 K.",
+      "verify": false
+    },
+    {
+      "i": "ethanol",
+      "j": "toluene",
+      "a_ij": 3.535443,
+      "a_ji": -4.017679,
+      "b_ij": -1179.868868,
+      "b_ji": 1439.449187,
+      "e_ij": 0.080956,
+      "e_ji": 0.196394,
+      "f_ij": 0.0,
+      "f_ji": 0.0,
+      "c": 0.3,
+      "d": 0.0,
+      "Tmin": 250.0,
+      "Tmax": 399.25,
+      "fitted_to": "VLE+CpE",
+      "rms_ln_gamma": 0.042,
+      "rmse_CpE_J_per_molK": 1.54,
+      "n_points": 69,
+      "source": "Fitted (tools/fit_nrtl_he.py) jointly to isobaric VLE (Chen, Zhong & Xu 2012, doi:10.1021/je200921u; Psat from NIST Antoine parameters) and Cp of the mixture at 313.15 K (Vega-Maza et al. 2011, doi:10.1016/j.jct.2011.06.019), NIST ThermoML archive. Phase-stable 250-390 K.",
       "verify": false
     }
   ],
@@ -171,15 +193,75 @@
       "i": "methanol",
       "j": "n-hexane",
       "miscible": false,
-      "source": "Partially miscible below UCST (~ 315 K); treated as immiscible",
-      "verify": true
+      "binodal": [
+        [
+          0.1403,
+          294.39
+        ],
+        [
+          0.2119,
+          305.03
+        ],
+        [
+          0.3009,
+          312.03
+        ],
+        [
+          0.3539,
+          312.15
+        ],
+        [
+          0.3947,
+          314.86
+        ],
+        [
+          0.4091,
+          314.39
+        ],
+        [
+          0.4355,
+          313.09
+        ],
+        [
+          0.4509,
+          311.83
+        ],
+        [
+          0.4907,
+          313.41
+        ],
+        [
+          0.4941,
+          314.41
+        ],
+        [
+          0.5498,
+          310.96
+        ],
+        [
+          0.5532,
+          311.05
+        ],
+        [
+          0.6545,
+          310.27
+        ],
+        [
+          0.7545,
+          305.63
+        ]
+      ],
+      "binodal_x_of": "methanol",
+      "ucst_K": 314.86,
+      "source": "Liquid-liquid coexistence curve, Trejo, Yanez & Eustaquio-Rincon, J. Chem. Eng. Data 2006, 51, 1070 (doi:10.1021/je0505321, NIST ThermoML): two liquid phases below the curve, one above (UCST about 314.9 K)",
+      "verify": false
     },
     {
       "i": "methanol",
       "j": "n-dodecane",
       "miscible": false,
-      "source": "Partially miscible; treated as immiscible",
-      "verify": true
+      "source": "Measured LLE, Casas, Orge, Diaz & Tojo, J. Chem. Thermodyn. 2004, 36, 237 (doi:10.1016/j.jct.2003.11.009): coexisting phases with x(methanol) = 0.05-0.09 and 0.99 at 278-308 K",
+      "verify": false
     },
     {
       "i": "methanol",

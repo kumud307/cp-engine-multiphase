@@ -14,8 +14,9 @@ small, so the parts can be worked on in parallel.
 
 ## Suggested schedule to Fri 20 Nov 2026
 
-Status on 2 Nov: code complete (142 tests pass); all validation data except a direct Cp dataset for
-water + ethanol are in place; manuscript drafted with real results.
+Status on 5 Nov: code complete (147 tests pass); all validation data except a direct Cp dataset for
+water + ethanol and DSC data for a PCM emulsion are in place; ethanol + toluene, methanol + n-hexane and
+n-octadecane gaps closed; manuscript drafted with real results.
 
 - **Mon 2 – Fri 6 Nov:** each owner reads their module, its tests and the matching section of
   `docs/TEAM_HANDBOOK.md`, then runs `pytest` and `python validation/run_all.py`.

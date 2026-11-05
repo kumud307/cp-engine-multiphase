@@ -162,6 +162,12 @@ class NRTL:
         return [(h, self.hE(x, T, h), self.cpE(x, T, h)) for h in steps]
 
 
+    def sub_binary(self, i: int, j: int) -> "NRTL":
+        """The binary i–j model contained in this multicomponent model (same parameters)."""
+        idx = [i, j]
+        mats = {name: getattr(self, name)[np.ix_(idx, idx)] for name in ("a", "b", "e", "f", "c", "d")}
+        return NRTL([self.keys[i], self.keys[j]], params=mats)
+
     def is_stable_binary(self, T: float, n: int = 2000) -> bool:
         """Phase-stability test for a binary: the Gibbs energy of mixing
         ΔG_mix/RT = x ln x + (1−x) ln(1−x) + G^E/RT must be convex in x
@@ -218,13 +224,15 @@ def fit_nrtl_to_excess(x1: Sequence[float], T: Sequence[float], values: Sequence
             "c": alpha, "d": 0.0, "fitted_to": kind, "rmse": rmse, "success": bool(res.success)}
 
 
-def fit_nrtl_joint(he: tuple, sle: tuple | None = None, alpha: float = 0.3,
+def fit_nrtl_joint(he: tuple | None, sle: tuple | None = None, alpha: float = 0.3,
                    fit: Sequence[str] = ("a12", "a21", "b12", "b21", "e12", "e21"),
                    initial: dict | None = None, sigma_he: float = 30.0, sigma_sle: float = 0.01,
-                   cpe: tuple | None = None, sigma_cpe: float = 0.5) -> dict:
+                   cpe: tuple | None = None, sigma_cpe: float = 0.5,
+                   lng: tuple | None = None, sigma_lng: float = 0.03) -> dict:
     """Fit binary NRTL parameters to excess enthalpies and (optionally) solid–liquid equilibrium data.
 
-    he  = (x1, T, H^E in J/mol)
+    he  = (x1, T, H^E in J/mol), or None
+    lng = (x1, T, ln γ1, ln γ2) activity coefficients, e.g. from VLE data via y P = x γ Psat
     cpe = (x1, T, Cp^E in J/(mol K)), optional excess heat capacities
     sle = (x1, T_freeze, Tm, dHfus, dCp, k): freezing points where pure component k (0 or 1)
           crystallises; residual = [ln x_k + ln γ_k(x, T) − sle_rhs(T)] / sigma_sle
@@ -235,7 +243,7 @@ def fit_nrtl_joint(he: tuple, sle: tuple | None = None, alpha: float = 0.3,
     from scipy.optimize import least_squares
     from .phase_change import sle_rhs
 
-    x1, T, H = (np.asarray(v, dtype=float) for v in he)
+    x1, T, H = (np.asarray(v, dtype=float) for v in (he if he is not None else ([], [], [])))
     init = {k: 0.0 for k in ("a12", "a21", "b12", "b21", "e12", "e21", "f12", "f21")}
     init.update(initial or {})
 
@@ -251,6 +259,10 @@ def fit_nrtl_joint(he: tuple, sle: tuple | None = None, alpha: float = 0.3,
         r = [(m.hE([x, 1 - x], t) - v) / sigma_he for x, t, v in zip(x1, T, H)]
         if cpe is not None:
             r += [(m.cpE([x, 1 - x], t) - v) / sigma_cpe for x, t, v in zip(*cpe)]
+        if lng is not None:
+            for x, t, l1, l2 in zip(*lng):
+                g = m.ln_gamma([x, 1 - x], t)
+                r += [(g[0] - l1) / sigma_lng, (g[1] - l2) / sigma_lng]
         if sle is not None:
             xs, Ts, Tm, dH, dCp, k = sle
             for x, t in zip(xs, Ts):
@@ -260,26 +272,32 @@ def fit_nrtl_joint(he: tuple, sle: tuple | None = None, alpha: float = 0.3,
 
     res = least_squares(resid, x0=[init[k] for k in fit], max_nfev=600)
     m, q = model(res.x)
-    rmse = float(np.sqrt(np.mean([(m.hE([x, 1 - x], t) - v) ** 2 for x, t, v in zip(x1, T, H)])))
+    cost = float(res.cost)
+    rmse = (float(np.sqrt(np.mean([(m.hE([x, 1 - x], t) - v) ** 2 for x, t, v in zip(x1, T, H)])))
+            if len(x1) else float("nan"))
     return {"a_ij": q["a12"], "a_ji": q["a21"], "b_ij": q["b12"], "b_ji": q["b21"], "e_ij": q["e12"],
             "e_ji": q["e21"], "f_ij": q["f12"], "f_ji": q["f21"], "c": alpha, "d": 0.0,
-            "fitted_to": "HE" + ("+CpE" if cpe is not None else "") + ("+SLE" if sle is not None else ""),
-            "rmse": rmse, "success": bool(res.success),
+            "fitted_to": "+".join([k for k, v in (("HE", he), ("VLE", lng), ("CpE", cpe), ("SLE", sle))
+                                   if v is not None]),
+            "rmse": rmse, "cost": cost, "success": bool(res.success),
             "model": m}
 
 
 def fit_nrtl_best(he: tuple, sle: tuple | None, initial: dict, alphas=(0.2, 0.3, 0.4, 0.47),
                   forms=(("a12", "a21", "b12", "b21"), ("a12", "a21", "b12", "b21", "e12", "e21")),
-                  T_stable=(220, 390), cpe: tuple | None = None) -> dict:
+                  T_stable=(220, 390), cpe: tuple | None = None, lng: tuple | None = None,
+                  score: str = "he", sigma_lng: float = 0.03) -> dict:
     """Try several α values and τ(T) forms; keep the lowest-H^E-error set that is phase-stable
-    (no liquid–liquid split) over T_stable. Returns the fit dict (see fit_nrtl_joint)."""
+    (no liquid–liquid split) over T_stable. Returns the fit dict (see fit_nrtl_joint).
+    score = "he" ranks candidates by their H^E error, "cost" by the total weighted residual."""
     best = None
     for alpha in alphas:
         for form in forms:
-            f = fit_nrtl_joint(he, sle, alpha, form, initial, cpe=cpe)
+            f = fit_nrtl_joint(he, sle, alpha, form, initial, cpe=cpe, lng=lng, sigma_lng=sigma_lng)
             if all(f["model"].is_stable_binary(T, 600) for T in range(T_stable[0], T_stable[1] + 1, 10)):
-                if best is None or f["rmse"] < best["rmse"]:
-                    best = f
+                key = f["rmse"] if score == "he" else f["cost"]
+                if best is None or key < best["_key"]:
+                    best = dict(f, _key=key)
     if best is None:
         raise ValueError("no phase-stable NRTL parameter set found")
     return best

@@ -1,0 +1,26 @@
+# SOURCE: NIST ThermoML archive: Trejo, Yanez & Eustaquio-Rincon, J. Chem. Eng. Data 2006, 51, 1070
+#   (doi:10.1021/je0505321); Casas, Orge, Diaz & Tojo, J. Chem. Thermodyn. 2004, 36, 237
+#   (doi:10.1016/j.jct.2003.11.009). Liquid-liquid equilibrium: T and methanol mole fraction.
+comp1,comp2,T_K,x1,kind,doi
+methanol,n-hexane,294.39,0.1403,coexistence curve,10.1021/je0505321
+methanol,n-hexane,305.03,0.2119,coexistence curve,10.1021/je0505321
+methanol,n-hexane,312.03,0.3009,coexistence curve,10.1021/je0505321
+methanol,n-hexane,312.15,0.3539,coexistence curve,10.1021/je0505321
+methanol,n-hexane,314.86,0.3947,coexistence curve,10.1021/je0505321
+methanol,n-hexane,314.39,0.4091,coexistence curve,10.1021/je0505321
+methanol,n-hexane,313.09,0.4355,coexistence curve,10.1021/je0505321
+methanol,n-hexane,311.83,0.4509,coexistence curve,10.1021/je0505321
+methanol,n-hexane,313.41,0.4907,coexistence curve,10.1021/je0505321
+methanol,n-hexane,314.41,0.4941,coexistence curve,10.1021/je0505321
+methanol,n-hexane,310.96,0.5498,coexistence curve,10.1021/je0505321
+methanol,n-hexane,311.05,0.5532,coexistence curve,10.1021/je0505321
+methanol,n-hexane,310.27,0.6545,coexistence curve,10.1021/je0505321
+methanol,n-hexane,305.63,0.7545,coexistence curve,10.1021/je0505321
+methanol,n-dodecane,278.15,0.053,phase composition,10.1016/j.jct.2003.11.009
+methanol,n-dodecane,288.15,0.062,phase composition,10.1016/j.jct.2003.11.009
+methanol,n-dodecane,298.15,0.084,phase composition,10.1016/j.jct.2003.11.009
+methanol,n-dodecane,308.15,0.094,phase composition,10.1016/j.jct.2003.11.009
+methanol,n-dodecane,278.15,0.992,phase composition,10.1016/j.jct.2003.11.009
+methanol,n-dodecane,288.15,0.992,phase composition,10.1016/j.jct.2003.11.009
+methanol,n-dodecane,298.15,0.99,phase composition,10.1016/j.jct.2003.11.009
+methanol,n-dodecane,308.15,0.987,phase composition,10.1016/j.jct.2003.11.009

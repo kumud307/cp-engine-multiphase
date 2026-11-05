@@ -148,11 +148,11 @@ also define components or override pure-component heat capacities for a single c
 data were obtained as follows:
 \begin{itemize}
 \item downloaded from NIST SRD~69 \cite{NISTFluid}, including isotherms to 100~MPa;
-\item extracted from the NIST ThermoML archive \cite{ThermoMLArchive}: 1090 binary points (compositions given as mole fraction, mass fraction or molality), each traced to its original paper;
+\item extracted from the NIST ThermoML archive \cite{ThermoMLArchive}: 1090 binary heat-capacity and excess-enthalpy points (compositions given as mole fraction, mass fraction or molality), 68 isobaric VLE points \cite{Chen2012}, 24 infinite-dilution activity coefficients \cite{Straver2005,Atik2004} and liquid--liquid equilibria \cite{Trejo2006,Casas2004}, each traced to its original paper;
 \item digitised from the vector figures of an open-access calorimetry study \cite{OHanley2012}, reading marker coordinates from the PDF drawing commands;
 \item taken from a handbook table of freezing points \cite{Lange1967}.
 \end{itemize}
-The software passes 142 automated tests, including regression tests against these data.
+The software passes 147 automated tests, including regression tests against these data.
 
 \section{Results and Discussion}
 Table~\ref{tab:aard} summarises the validation.
@@ -190,10 +190,21 @@ parameters give \SI{9.1}{J.mol^{-1}.K^{-1}} and a peak of only about \SI{2}{J.mo
 The decisive test uses heat capacities that were \emph{not} used in any fit. For water + methanol at 280
 and 320~K and 0.1~MPa \cite{Tanaka2007}, the ideal-mixture rule gives 7.5\,\% AARD, the VLE-NRTL model 6.5\,\%
 and the $H^E$-refitted model 2.7\,\% (Figure~\ref{fig:meoh}). The largest remaining deviations occur at
-280~K, below the range of the excess-enthalpy data. For ethanol + toluene, for which no binary parameters
-are available, the ideal fallback underestimates $C_p$ by 8.3\,\% \cite{VegaMaza2011}, whereas for dilute
-glycerol + water ($x\le0.08$, 278--363~K) it is adequate (0.52\,\% over 162 points \cite{Blodgett2007}). This
-shows the importance of binary caloric data; the engine warns whenever it falls back to ideal mixing.
+280~K, below the range of the excess-enthalpy data. For ethanol + toluene the ideal-mixture rule underestimates $C_p$ by 8.3\,\% \cite{VegaMaza2011}. NRTL
+parameters fitted jointly to isobaric VLE \cite{Chen2012} (activity coefficients from $y_iP=x_i\gamma_iP_i^\mathrm{sat}$)
+and to the measured $C_p^E$ reduce this to 1.3\,\% and reproduce the bubble temperatures to 0.6~K. With half
+of the $C_p^E$ compositions held out, the RMSD is \SI{3.0}{J.mol^{-1}.K^{-1}}; a fit to the VLE data alone predicts
+$C_p^E$ to \SI{7.1}{J.mol^{-1}.K^{-1}}. For dilute glycerol + water ($x\le0.08$, 278--363~K) ideal mixing is
+adequate (0.52\,\% over 162 points \cite{Blodgett2007}). This shows the importance of binary caloric data;
+the engine warns whenever it falls back to ideal mixing.
+
+Infinite-dilution activity coefficients in water \cite{Straver2005,Atik2004}, used in no fit, expose the
+limit of caloric fitting: for ethanol the $H^E$-optimised parameters deviate by 35\,\% and the VLE parameters
+by 12\,\%. Adding $\gamma^\infty$ to the regression improved it but worsened the held-out $C_p^E$ and freezing
+points, so the caloric set is retained and the trade-off reported. The engine also tests every NRTL pair it
+uses for a spurious liquid--liquid split at the working temperature; the literature acetone + water set fails
+this test above about 360~K. Miscibility of methanol + $n$-hexane follows the measured coexistence curve
+(upper critical solution temperature 314.9~K \cite{Trejo2006}).
 
 For NaCl(aq) the apparent-molar-heat-capacity model, fitted to one study \cite{Tromans2005}, predicts an
 independent measurement at 2.05~mol\,kg$^{-1}$ \cite{Gao2017} to 0.17\,\%, whereas counting the dissolved salt
@@ -284,7 +295,7 @@ against 2.9\,\% for the solid-heat-capacity estimate).
 \item One NRTL model fitted jointly to excess enthalpies and freezing points describes ice slurries
 consistently, at the cost of a larger freezing-point error (2.5~K held-out) than the ideal equation (0.84~K).
 \end{enumerate}
-Remaining limitations are the need for binary caloric data, the absence of vapour--liquid equilibrium
+Remaining limitations are the need for binary caloric data, the absence of vapour--liquid flash calculations
 for mixtures and of solute partitioning in emulsions, the lack of open calorimetric data for emulsions and
 PCM slurries, and an electrolyte model limited to NaCl at 298~K.
 

@@ -1,0 +1,25 @@
+# SOURCE: NIST ThermoML archive: Straver & de Loos, J. Chem. Eng. Data 2005, 50, 1171 (doi:10.1021/je0495942);
+#   Atik, Gruber, Krummen & Gmehling, J. Chem. Eng. Data 2004, 49, 1429 (doi:10.1021/je049875+).
+# Activity coefficient of the solute at infinite dilution in water.
+solute,solvent,T_K,gamma_inf,doi
+ethanol,water,298.15,3.77,10.1021/je0495942
+acetone,water,298.01,7.62,10.1021/je0495942
+acetone,water,298.01,7.68,10.1021/je0495942
+acetone,water,298.03,7.64,10.1021/je0495942
+acetone,water,298.03,7.7,10.1021/je0495942
+acetone,water,298.04,7.68,10.1021/je0495942
+acetone,water,298.04,7.74,10.1021/je0495942
+acetone,water,298.17,7.7,10.1021/je0495942
+ethanol,water,303.25,5.03,10.1021/je049875+
+ethanol,water,313.25,5.33,10.1021/je049875+
+ethanol,water,323.25,5.54,10.1021/je049875+
+ethanol,water,333.25,5.76,10.1021/je049875+
+ethanol,water,343.25,5.96,10.1021/je049875+
+acetone,water,303.25,8.02,10.1021/je049875+
+acetone,water,313.25,9.2,10.1021/je049875+
+acetone,water,323.25,9.81,10.1021/je049875+
+acetone,water,333.25,10.3,10.1021/je049875+
+toluene,water,308.95,8570.0,10.1021/je049875+
+toluene,water,313.25,8090.0,10.1021/je049875+
+toluene,water,318.25,7720.0,10.1021/je049875+
+toluene,water,323.15,7110.0,10.1021/je049875+

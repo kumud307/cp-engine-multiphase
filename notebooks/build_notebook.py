@@ -199,6 +199,17 @@ code(r"""
 r = engine.solve({"T": "25 C", "mass_fractions": {"water": 0.5, "toluene": 0.3, "ethanol": 0.2}})
 print(r); pd.DataFrame(r.behaviour)
 """)
+md("Miscibility can depend on temperature. For methanol + n-hexane the engine reads the measured liquid–liquid "
+   "coexistence curve (Trejo et al. 2006, UCST 314.9 K): two liquid phases at 25 °C, one solution at 50 °C. "
+   "Ethanol + toluene is fully miscible; its NRTL parameters were fitted to measured VLE and Cpᴱ "
+   "(1.3 % against Vega-Maza et al. 2011, against 8.3 % for ideal mixing).")
+code(r"""
+for T in ("25 C", "50 C"):
+    print(T, "->", engine.solve({"T": T, "mole_fractions": {"methanol": 0.5, "n-hexane": 0.5}}).classification)
+for model in ("ideal", "nrtl"):
+    r = engine.solve({"T": "40 C", "mole_fractions": {"ethanol": 0.3, "toluene": 0.7}, "solution_model": model})
+    print(f"ethanol + toluene, {model:5s}: Cp = {r.cp_molar:.1f} J/(mol K)")
+""")
 md("### 8.4 Slurries with phase change\n**Ice slurry** in 10 wt% aqueous ethanol: the ice fraction follows the solid–liquid equilibrium (freezing-point depression), so the apparent Cp includes the latent heat of the ice that melts as T rises.")
 code(r"""
 r = engine.solve({"T": "-10 C", "mass_fractions": {"water": 0.9, "ethanol": 0.1}})

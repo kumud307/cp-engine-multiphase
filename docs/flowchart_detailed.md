@@ -35,7 +35,9 @@ if an output is already in K, compare (|Δ|/max > 2 % → inconsistency warning)
 - Real liquid solution (NRTL): G^E/RT = Σᵢ xᵢ Σⱼ τⱼᵢGⱼᵢxⱼ / Σₖ Gₖᵢxₖ; τᵢⱼ = aᵢⱼ + bᵢⱼ/T + eᵢⱼ ln T + fᵢⱼT; Gᵢⱼ = exp(−αᵢⱼτᵢⱼ).
   - H^E = −RT² ∂(G^E/RT)/∂T; Cp^E = (∂H^E/∂T)_{P,x} = −R(2Tg′ + T²g″), central differences with h = 10⁻⁴T.
   - Cp = Σ xᵢ Cpᵢ + Cp^E.
-  - Parameter choice: sets refitted to measured H^E at several temperatures (default; accepted only if ΔG_mix/RT is convex in x from 240 to 390 K) rather than VLE-regressed sets.
+  - Parameter choice: sets refitted to measured H^E at several temperatures (default; accepted only if ΔG_mix/RT is convex in x from 240 to 390 K) rather than VLE-regressed sets; ethanol + toluene fitted jointly to VLE (ln γᵢ = ln[yᵢP/(xᵢP_sat,i)], Antoine P_sat) and Cp^E.
+  - Runtime stability check: for every NRTL pair in use, ∂²(ΔG_mix/RT)/∂x² > 0 on a grid at the working T; otherwise warn of a spurious liquid–liquid split.
+- Liquid-phase grouping: a pair with a stored coexistence curve (methanol + n-hexane) is two phases when T is below the curve at the pair's composition, one phase otherwise (warn if T₁–T₂ crosses it); other pairs use the fixed miscibility flag.
 - Heterogeneous mixture: c_p = Σ_phases w_p c_p,p (mass weighting).
   - Model I (inconsistent): c_p = φ c_p,s + (1 − φ) c_p,f.
   - Model II (thermal equilibrium): c_p = [φρ_s c_p,s + (1 − φ)ρ_f c_p,f] / [φρ_s + (1 − φ)ρ_f] ≡ mass weighting.

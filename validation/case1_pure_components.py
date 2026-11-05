@@ -69,6 +69,13 @@ def run(save: bool = True) -> list[dict]:
         rows.append(row("1", name, "cp vs pressure 0.1-100 MPa, without pressure correction (for comparison)",
                         n, a0, mx0, "NIST SRD 69"))
 
+    # ideal-gas Cp vs NIST recommended values (200-1000 K)
+    gas = load("nist_ideal_gas_cp.csv")
+    for comp, g in gas.groupby("component"):
+        corr = db.get(comp).cp_corr["gas"]
+        a, mx, n = aard([corr.raw(t) for t in g.T_K], g.Cp_J_molK)
+        rows.append(row("1", f"{comp} (ideal gas)", "Cp 200-1000 K", n, a, mx, "NIST WebBook (TRC / Chao / Scott / Draeger)"))
+
     # Cv -> Cp route for water with NIST cv
     d = load("nist_water_1atm.csv")
     cp_from_cv = [engine.solve({"T": t, "Cv": (cv, "J/(kg K)"), "components": ["water"]})

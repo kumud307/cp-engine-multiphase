@@ -10,6 +10,8 @@ part of the data left out, and the left-out part is predicted:
      over 298–323 K obtained from that paper's two isotherms (a genuine prediction).
   C  freezing points, 3-fold: refit with 2/3 of the freezing points, predict the remaining 1/3.
   D  water + methanol, leave-one-temperature-band-out (H^E only).
+  E  ethanol + toluene (fitted to VLE + Cp^E): (i) a fit to the VLE data ALONE predicts Cp^E, (ii) leave one
+     pressure of the VLE data out, (iii) fit with every second Cp^E composition and predict the others.
 
 The same α and τ(T) form as the stored set are used for every refit. Results are cached in
 validation/results/crossvalidation.csv (each refit takes ~10 s); run with --recompute to redo them.
@@ -46,6 +48,17 @@ def freezing(db):
     return fp.reset_index(drop=True)
 
 
+def gamma_inf(alc):
+    """Same gamma_inf data as the stored water + ethanol fit (tools/fit_nrtl_he.py)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+    import fit_nrtl_he as F
+    if alc != "ethanol" or not F.INCLUDE_GAMMA_INF:
+        return None
+    g = load("thermoml_gamma_inf.csv")
+    g = g[(g.solute == alc) & (g.solvent == "water")]
+    return (np.full(len(g), 1e-6), g.T_K.values, np.log(g.gamma_inf.values), np.zeros(len(g)))
+
+
 def refit(db, alc, he, fp=None):
     p = db.nrtl_pair(alc, "water")                      # stored set: same alpha and tau(T) form
     form = ("a12", "a21", "b12", "b21") + (("e12", "e21") if p.get("e_ij") or p.get("e_ji") else ())
@@ -56,7 +69,8 @@ def refit(db, alc, he, fp=None):
         w = db.get("water")
         dCp = w.cp_corr["liquid"].raw(w.Tm) - w.cp_corr["solid"].raw(w.Tm)
         sle = (fp.x.values, fp.freezing_point_K.values, w.Tm, w.dHfus, dCp, 1)
-    return fit_nrtl_joint((he.x, he.T_K, he.value), sle, p["c"], form, init)["model"]
+    gi = gamma_inf(alc)
+    return fit_nrtl_joint((he.x, he.T_K, he.value), sle, p["c"], form, init, lng=gi, sigma_lng=0.1)["model"]
 
 
 def rmsd(m, g):
@@ -128,6 +142,36 @@ def compute() -> pd.DataFrame:
         out.append({"test": "D", "system": "methanol + water", "held_out": f"H^E {lo}-{hi} K", "N": len(test),
                     "model": rmsd(m, test), "vle": rmsd(vle, test), "metric": "RMSD J/mol"})
         print(f"  D  methanol, held-out {lo}-{hi} K: RMSD {out[-1]['model']:.1f} (VLE params {out[-1]['vle']:.1f}) J/mol")
+    # E: ethanol + toluene
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+    import fit_nrtl_he as F
+    lng, cpe, v, cp = F.load_ethanol_toluene(db)
+    stored = db.nrtl_pair("ethanol", "toluene")
+    form = ("a12", "a21", "b12", "b21")
+    init = {"a12": stored["a_ij"], "a21": stored["a_ji"], "b12": stored["b_ij"], "b21": stored["b_ji"]}
+    cpe_rmsd = lambda m, x, T, c: float(np.sqrt(np.mean([(m.cpE([a, 1 - a], t) - y) ** 2 for a, t, y in zip(x, T, c)])))
+    lng_rms = lambda m, t: float(np.sqrt(np.mean([((m.ln_gamma([x, 1 - x], T)[0] - a) ** 2 + (m.ln_gamma([x, 1 - x], T)[1] - b) ** 2) / 2
+                                                  for x, T, a, b in zip(*t)])))
+    only_vle = fit_nrtl_joint(None, None, stored["c"], form, init, lng=lng)["model"]
+    out.append({"test": "E", "system": "ethanol + toluene", "held_out": "Cp^E predicted by a fit to VLE only",
+                "N": len(cpe[0]), "model": cpe_rmsd(only_vle, *cpe), "vle": np.nan, "metric": "RMSD J/(mol K)"})
+    print(f"  E  ethanol + toluene, Cp^E from a VLE-only fit: RMSD {out[-1]['model']:.2f} J/(mol K)")
+    for P in sorted(v.P_kPa.unique()):
+        sel = v.P_kPa.values == P
+        tr = tuple(a[~sel] for a in lng)
+        te = tuple(a[sel] for a in lng)
+        m = fit_nrtl_joint(None, None, stored["c"], form, init, cpe=cpe, lng=tr)["model"]
+        out.append({"test": "F", "system": "ethanol + toluene", "held_out": f"ln gamma at {P:g} kPa",
+                    "N": int(sel.sum()), "model": lng_rms(m, te), "vle": np.nan, "metric": "RMS ln gamma"})
+        print(f"  F  ethanol + toluene, held-out VLE at {P:g} kPa: RMS ln gamma {out[-1]['model']:.3f}")
+    idx = np.arange(len(cpe[0]))
+    for k in (0, 1):
+        te = tuple(a[idx % 2 == k] for a in cpe)
+        tr = tuple(a[idx % 2 != k] for a in cpe)
+        m = fit_nrtl_joint(None, None, stored["c"], form, init, cpe=tr, lng=lng)["model"]
+        out.append({"test": "G", "system": "ethanol + toluene", "held_out": f"Cp^E, compositions {k}::2",
+                    "N": len(te[0]), "model": cpe_rmsd(m, *te), "vle": np.nan, "metric": "RMSD J/(mol K)"})
+        print(f"  G  ethanol + toluene, held-out Cp^E half {k}: RMSD {out[-1]['model']:.2f} J/(mol K)")
     df = pd.DataFrame(out)
     RESULTS.mkdir(exist_ok=True)
     df.to_csv(CACHE, index=False)
@@ -145,10 +189,14 @@ def run(save: bool = True, recompute: bool = False) -> list[dict]:
             mean = float(np.sum(g.model * g.N) / n)
         label = {"A": "H^E, leave-one-isotherm-out (held-out)", "B": "mean Cp^E 298-323 K, source paper held out",
                  "C": "freezing points, 3-fold cross-validation (held-out)",
-                 "D": "H^E, leave-one-temperature-band-out (held-out)"}[test]
+                 "D": "H^E, leave-one-temperature-band-out (held-out)",
+                 "E": "Cp^E predicted from VLE data alone (no Cp data in the fit)",
+                 "F": "VLE activity coefficients, leave-one-pressure-out (held-out)",
+                 "G": "Cp^E, every second composition held out"}[test]
         fails = int(g["failed"].fillna(0).sum()) if "failed" in g else 0
         note = f" ({fails} held-out point(s) with no predicted liquidus, excluded)" if fails else ""
-        rows.append(row("2b", system, f"{label}, NRTL refitted{note}", n, mean, float(g.model.max()),
+        tag = "" if test == "E" else ", NRTL refitted"
+        rows.append(row("2b", system, f"{label}{tag}{note}", n, mean, float(g.model.max()),
                         "cross-validation", metric=metric))
         if g.vle.notna().any():
             vmean = float(np.sqrt(np.sum(g.vle ** 2 * g.N) / n)) if metric.startswith("RMSD") else float(np.mean(g.vle))

@@ -24,11 +24,12 @@
   - Stop when no further rule can be applied
 - Route A: property route (needs temperature and composition)
   - Decide the behaviour of each component: solid, liquid, gas, dissolved, melting, crystallising from solution, boiling
-  - Group the liquids into liquid phases (miscible liquids together, immiscible liquids separate)
+  - Group the liquids into liquid phases (miscible liquids together, immiscible liquids separate; where a measured coexistence curve is stored, decide from the temperature and composition)
   - Classify the system: ideal mixture, real liquid solution, suspension, emulsion, slurry with phase change
   - Look up the pure-component heat capacities
   - Correct the pure-component heat capacities from atmospheric pressure to the given pressure
-  - Add the excess heat capacity for each real liquid solution, using interaction parameters fitted to measured heats of mixing
+  - Add the excess heat capacity for each real liquid solution, using interaction parameters fitted to measured heats of mixing (or to vapour–liquid equilibrium and excess heat capacity)
+  - Check that the interaction parameters do not predict a false split into two liquids at this temperature; warn if they do
   - Find how much of each component is solid, liquid or dissolved at each temperature from phase equilibrium
   - For dissolved salts, use the measured heat capacity of the salt in solution instead of the solid value
   - Add the latent contribution of any material that changes phase

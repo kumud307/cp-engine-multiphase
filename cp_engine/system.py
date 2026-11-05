@@ -146,6 +146,7 @@ class SystemModel:
         self.groups: dict[str, list[str]] = {}
         self._nrtl_cache: dict[tuple[str, ...], NRTL | None] = {}
         self._H_cache: dict[tuple, float] = {}
+        self._stability_checked: set = set()
         self.window: tuple[float, float] | None = None
 
     # ==================================================================
@@ -207,7 +208,7 @@ class SystemModel:
 
             Tm, Tb = c.Tm, c.Tb_at(self.P)
             partners = [j for j in keys if j != k and (
-                (liquid_capable(j) and self.db.miscibility(k, j)[0])
+                (liquid_capable(j) and self._miscible(k, j))
                 or self.phase_spec[j] == "dissolved"
                 or (self.phase_spec[j] == "auto" and self.db.solubility_entry(j, k) is not None))]
             if Tb is not None and lo > Tb and c.has_phase("gas"):
@@ -248,6 +249,28 @@ class SystemModel:
         self._H_cache.clear()
 
     # ------------------------------------------------------------------
+    def _pair_state(self, a: str, b: str) -> tuple[float | None, float]:
+        """(temperature, mole fraction of a in the a–b pair) used to decide miscibility."""
+        T = 0.5 * (self.window[0] + self.window[1]) if self.window else None
+        na, nb = self.amounts.get(a, 0.0), self.amounts.get(b, 0.0)
+        return T, (na / (na + nb) if na + nb > 0 else 0.5)
+
+    def _miscible(self, a: str, b: str) -> bool:
+        T, x = self._pair_state(a, b)
+        ok, why = self.db.miscibility(a, b, T, x)
+        if why.startswith("database binodal") and self.window and self.window[1] - self.window[0] > 0:
+            lo = self.db.miscibility(a, b, self.window[0], x)[0]
+            hi = self.db.miscibility(a, b, self.window[1], x)[0]
+            if lo != hi:
+                n1, n2 = sorted((self.comps[a].name, self.comps[b].name))
+                self.log.warn(f"{n1} + {n2} crosses its liquid–liquid coexistence "
+                              f"curve inside [{self.window[0]:.1f}, {self.window[1]:.1f}] K; the phase split is "
+                              f"evaluated at the mid-point ({why}). Use a narrower interval on either side.")
+        if why.startswith("database binodal"):
+            n1, n2 = sorted((self.comps[a].name, self.comps[b].name))
+            self.log.note(f"Miscibility of {n1} + {n2}: {why}.")
+        return ok
+
     def _group_liquids(self) -> None:
         """Assign liquid-capable components to liquid phases."""
         solvents = [k for k, p in self.plans.items()
@@ -266,7 +289,7 @@ class SystemModel:
             raw: list[list[str]] = []
             for k in sorted(solvents, key=lambda k: -self.amounts[k]):
                 placed = None
-                fits = [g for g in raw if all(self.db.miscibility(k, j)[0] for j in g)]
+                fits = [g for g in raw if all(self._miscible(k, j) for j in g)]
                 if fits:
                     placed = fits[0]
                     placed.append(k)
@@ -279,7 +302,7 @@ class SystemModel:
             for g in raw:
                 for i, a in enumerate(g):
                     for b in g[i + 1:]:
-                        ok, why = self.db.miscibility(a, b)
+                        ok, why = self.db.miscibility(a, b, *self._pair_state(a, b))
                         if why.startswith("heuristic"):
                             self.log.assume(f"Miscibility of {a}–{b}: {why}.")
             for g in raw:
@@ -342,6 +365,25 @@ class SystemModel:
         if c.Tm is None or not (c.has_phase("liquid") and c.has_phase("solid")):
             return 0.0
         return c.cp_corr["liquid"].raw(c.Tm) - c.cp_corr["solid"].raw(c.Tm)
+
+    def _check_stability(self, model: NRTL, T: float) -> None:
+        """Warn if, at T, the NRTL parameters of a pair would predict a (false) liquid–liquid split.
+
+        Every pair in a liquid phase was judged miscible, so a non-convex ΔG_mix/RT means the binary
+        parameters are being used outside their reliable range (Cp^E is then less trustworthy).
+        """
+        key = (tuple(model.keys), round(T / 5.0) * 5.0)
+        if key in self._stability_checked:
+            return
+        self._stability_checked.add(key)
+        for i in range(len(model.keys)):
+            for j in range(i + 1, len(model.keys)):
+                if (model.keys[i], model.keys[j]) not in model.pair_sources:
+                    continue
+                if not model.sub_binary(i, j).is_stable_binary(key[1], 400):
+                    a, b = sorted((self.comps[model.keys[i]].name, self.comps[model.keys[j]].name))
+                    self.log.warn(f"The NRTL parameters of {a} + {b} predict a spurious liquid–liquid split near "
+                                  f"{key[1]:.0f} K (outside their reliable range); Cp^E for this pair is uncertain.")
 
     def _ions(self, k: str) -> float:
         return float(self.comps[k].raw.get("ions_in_solution", {}).get("value", 1))
@@ -534,6 +576,7 @@ class SystemModel:
             model = self._nrtl(tuple(self.groups[gname]))
             if model is not None:
                 model.check_temperature(T)
+                self._check_stability(model, T)
                 tot = sum(comp_n.values())
                 x = [comp_n.get(m, 0.0) / tot for m in self.groups[gname]]
                 excess += tot * model.cpE(x, T)

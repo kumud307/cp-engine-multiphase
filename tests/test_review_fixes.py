@@ -106,3 +106,30 @@ def test_custom_component_errors(engine):
     assert not r.success and "needs at least" in r.errors[0]
     r = engine.solve({"T": 300, "components": ["water"], "custom_components": {"ethanol": {"MW": 46, "cp": 2000}}})
     assert not r.success and "clashes" in r.errors[0]
+
+
+# ---------------------------------------------------------------- measured liquid-liquid equilibrium
+def test_methanol_hexane_follows_measured_binodal(engine):
+    cold = engine.solve({"T": "25 C", "mole_fractions": {"methanol": 0.4, "n-hexane": 0.6}})
+    hot = engine.solve({"T": "50 C", "mole_fractions": {"methanol": 0.4, "n-hexane": 0.6}})
+    dilute = engine.solve({"T": "25 C", "mole_fractions": {"methanol": 0.05, "n-hexane": 0.95}})
+    assert "emulsion" in cold.classification                 # below the UCST (314.9 K): two liquids
+    assert "Homogeneous" in hot.classification               # above it: one solution
+    assert "Homogeneous" in dilute.classification            # outside the two-phase region
+    crossing = engine.solve({"T1": "25 C", "T2": "55 C", "mole_fractions": {"methanol": 0.4, "n-hexane": 0.6}})
+    assert sum("coexistence curve inside" in w for w in crossing.warnings) == 1
+
+
+def test_psat_matches_measured_boiling_points(db):
+    """NIST Antoine sets vs the pure boiling points measured by Chen et al. (2012) at 101.3 kPa."""
+    assert db.get("ethanol").psat(351.35) == pytest.approx(101.3e3, rel=0.01)
+    assert db.get("toluene").psat(383.55) == pytest.approx(101.3e3, rel=0.01)
+
+
+def test_spurious_phase_split_warning(engine):
+    """The literature acetone + water set is not phase-stable near 360 K; the engine must say so."""
+    r = engine.solve({"T": "358 K", "P": "5 bar", "mole_fractions": {"acetone": 0.3, "water": 0.7},
+                      "phases": {"acetone": "liquid", "water": "liquid"}})
+    assert r.success and any("spurious liquid–liquid split" in w for w in r.warnings)
+    r = engine.solve({"T": "300 K", "mole_fractions": {"acetone": 0.3, "water": 0.7}})
+    assert not any("spurious" in w for w in r.warnings)

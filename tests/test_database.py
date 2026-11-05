@@ -73,5 +73,7 @@ def test_every_component_has_mw_and_some_cp(db):
         assert c.MW > 0 and c.cp_corr, k
 
 
-def test_verify_list_not_empty(db):
-    assert any("binary.nrtl" in v for v in db.verify_items())
+def test_verify_list_reports_open_items(db):
+    items = db.verify_items()
+    assert any(v.startswith("n-octadecane.density[solid]") for v in items)       # still unverified
+    assert not any(v.startswith("binary.nrtl") for v in items)                   # all NRTL sets now checked

@@ -21,7 +21,7 @@ Every result reports:
 python -m venv .venv
 .venv\Scripts\activate            # Windows   (Linux/macOS: source .venv/bin/activate)
 pip install -e .[dev]             # numpy, scipy, pandas, matplotlib (+ pytest, sympy, ipywidgets, nbclient)
-pytest                            # 142 tests
+pytest                            # 147 tests
 ```
 
 **Google Colab:** open the notebook directly from GitHub:
@@ -134,7 +134,7 @@ cp_engine/          units, database, inputs (normaliser), validator, rules, solv
   plotting.py, interactive.py
 data/               components.json, binary_nrtl.json
 validation/         case1 … case5 scripts, run_all.py, data/ (NIST, ThermoML, nanofluid and freezing-point data), results/
-tests/              pytest suite (142 tests, incl. regression tests against literature data)
+tests/              pytest suite (147 tests, incl. regression tests against literature data)
 notebooks/          CP_Engine_Demo.ipynb (+ build_notebook.py that generates it)
 docs/               TEAM_HANDBOOK.md (start here: demo script + defence Q&A), DATA_SOURCES.md, DATA_TO_VERIFY.md,
                     flowchart.md (professor format), flowchart_detailed.md, WORK_BREAKDOWN.md
@@ -153,12 +153,15 @@ are published measurements; `docs/DATA_SOURCES.md` documents where each came fro
 |---|---|---|
 | 1 | 5 pure liquids, NIST SRD 69 (128 points) + 15 literature point values | AARD 0.33 % (max 1.25 %); Cv → Cp route 0.02 % |
 | 1 | 5 liquids at 0.1–100 MPa, NIST isotherms (48 points) | **0.39 %** with the Tait correction (1.85 % without) |
+| 1 | Ideal-gas Cp of 5 components, NIST, 200–1000 K | AARD ≤ 0.46 % (max 1.25 %) |
 | 2 | Hᴱ of water + ethanol / methanol (NIST ThermoML, 239 points) | RMSD 256 → 34 and 141 → 23 J/mol (fit); **46 and 48 J/mol held-out** |
 | 2b | Cpᴱ of water + ethanol, source paper held out of the fit | RMSD 9.1 (VLE) → **3.7 J/(mol K)** |
 | 2 | Cp of water + methanol (Tanaka et al. 2007, independent) | ideal 7.5 %, VLE-NRTL 6.5 %, **Hᴱ-NRTL 2.7 %** |
 | 2 | Cp of NaCl(aq), independent point | **0.17 %** (solid-Cp estimate 2.9 %) |
 | 2 | Cp of glycerol + water, 162 points | 0.52 % (ideal fallback) |
-| 2 | Cp of ethanol + toluene (no binary parameters) | ideal fallback 8.3 % |
+| 2 | Cp of ethanol + toluene (Vega-Maza et al. 2011), NRTL fitted to VLE + Cpᴱ | **1.3 %** (ideal mixing 8.3 %); VLE bubble T 0.6 K |
+| 2b | Cpᴱ of ethanol + toluene, half the compositions held out | **3.0 J/(mol K)**; from VLE data alone 7.1 |
+| 2 | γ∞ in water (independent, Straver 2005; Atik 2004) | ethanol 35 % (Cp-optimised set) / 12 % (VLE set); acetone 25 % |
 | 3 | 69 nanofluid DSC points, Al₂O₃ / CuO / SiO₂ (O'Hanley et al. 2012) | **Model II = Route A 2.1 %**, Model I 18.5 % |
 | 4 | Freezing points of aqueous ethanol ≤ 30 wt% (Lange 1967) | consistent NRTL 1.7 K (fit), **2.5 K held-out**; ideal + ΔCp 0.84 K |
 | 5 | Route A → Q → Route B, 7 systems | agree to < 10⁻⁶ % |
@@ -169,8 +172,9 @@ The template `validation/data/water_ethanol_cp_exp.csv` is read automatically on
 ## Main assumptions and limitations
 
 - Ideal volume of mixing (Vᴱ = 0) for densities, α and κ_T of mixtures; interfacial enthalpy of particles is neglected.
-- Cpᴱ only for pairs with NRTL parameters. Pairs without them are treated as ideal, with a warning. For water + ethanol and water + methanol the engine uses parameters refitted to measured Hᴱ (`tools/fit_nrtl_he.py`); VLE-fitted sets underpredict Cpᴱ six-fold or more.
-- Partitioning of a solute between immiscible liquid phases (emulsions) and VLE of mixtures are not modelled; the engine warns.
+- Cpᴱ only for pairs with NRTL parameters. Pairs without them are treated as ideal, with a warning. For water + ethanol and water + methanol the engine uses parameters refitted to measured Hᴱ (`tools/fit_nrtl_he.py`); VLE-fitted sets underpredict Cpᴱ six-fold or more. Ethanol + toluene is fitted jointly to VLE and Cpᴱ. The Cp-optimised water + ethanol set describes γ∞ less well than the VLE set (35 % vs 12 %); adding γ∞ to the fit worsened held-out Cpᴱ, so the trade-off is reported rather than hidden.
+- Partitioning of a solute between immiscible liquid phases (emulsions) and VLE flash of mixtures are not modelled; the engine warns. Miscibility follows a measured coexistence curve where one is stored (methanol + n-hexane, UCST 314.9 K), otherwise a fixed flag.
+- Every NRTL pair in use is checked for a spurious liquid–liquid split at the working temperature (the literature acetone + water set fails above ≈ 360 K; the engine warns).
 - Dissolved NaCl uses an apparent molar heat capacity fitted at 298 K (warning elsewhere); other dissolved solids use the Neumann–Kopp approximation (solid-state Cp).
 - Pressure: liquid and solid Cp are corrected from 1 atm with the Tait equation (validated to 100 MPa for 5 liquids; other components use a constant κ_T).
 - Pure-component melting is smoothed over a finite, user-adjustable width. Point values inside the step depend on it (the engine warns); the latent heat and any interval-mean Cp spanning the transition do not.

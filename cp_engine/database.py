@@ -279,6 +279,20 @@ class Component:
                                                             - self.molar_volume(phase, T - h, p)) / (2 * h)
         return self._p_integral(f, P)
 
+    def psat(self, T: float, log: Log | None = None) -> float:
+        """Vapour pressure in Pa from the Antoine equation log10(P/bar) = A − B/(T + C) (NIST sets).
+
+        The set whose range contains T is used; otherwise the nearest set, with a warning.
+        """
+        sets = self.raw.get("antoine")
+        if not sets:
+            raise DataError(f"No vapour-pressure (Antoine) data for {self.name}.")
+        inside = [a for a in sets if a["Tmin"] <= T <= a["Tmax"]]
+        a = inside[0] if inside else min(sets, key=lambda a: min(abs(T - a["Tmin"]), abs(T - a["Tmax"])))
+        if not inside and log is not None:
+            log.warn(f"Vapour pressure of {self.name}: T = {T:.1f} K outside the Antoine ranges; nearest set extrapolated.")
+        return 10.0 ** (a["A"] - a["B"] / (T + a["C"])) * 1e5
+
     def Tb_at(self, P: float) -> float | None:
         """Boiling point at pressure P from the Clausius–Clapeyron equation.
 
@@ -406,10 +420,30 @@ class Database:
         # "HE" also matches "HE+SLE" (fitted jointly to excess enthalpies and freezing points)
         return next((p for p in found if str(p.get("fitted_to", "")).startswith(prefer)), found[0])
 
-    def miscibility(self, i: str, j: str) -> tuple[bool, str]:
-        """Are liquids i and j miscible? Returns (miscible, reason)."""
+    def miscibility(self, i: str, j: str, T: float | None = None, x_i: float | None = None) -> tuple[bool, str]:
+        """Are liquids i and j miscible? Returns (miscible, reason).
+
+        If the database holds a measured liquid–liquid coexistence curve (binodal) for the pair, the
+        answer depends on temperature and composition: two liquid phases form below the curve, one
+        above it (upper critical solution temperature). Without T, the pair is reported as it behaves
+        at room temperature (the 'miscible' flag).
+        """
         for p in self._bin_json.get("miscibility", []):
             if {p["i"], p["j"]} == {i, j}:
+                if "binodal" in p and T is not None:
+                    import numpy as np
+                    xs, Ts = zip(*p["binodal"])
+                    xa = x_i if (x_i is not None and p.get("binodal_x_of", p["i"]) == i) else (
+                        None if x_i is None else 1.0 - x_i)
+                    if xa is None:
+                        T_split = float(p.get("ucst_K", max(Ts)))
+                    elif xs[0] <= xa <= xs[-1]:
+                        T_split = float(np.interp(xa, xs, Ts))
+                    else:                        # outside the measured curve: dilute, single phase
+                        return True, f"database binodal: x = {xa:.3f} outside the two-phase region ({p.get('source', '')[:60]}...)"
+                    if T > T_split:
+                        return True, f"database binodal: T = {T:.1f} K above the coexistence curve ({T_split:.1f} K)"
+                    return False, f"database binodal: T = {T:.1f} K below the coexistence curve ({T_split:.1f} K)"
                 return bool(p["miscible"]), f"database: {p.get('source', '')}"
         ci, cj = self.components[i].miscibility_class, self.components[j].miscibility_class
         classes = {ci, cj}

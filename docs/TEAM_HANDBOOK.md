@@ -44,7 +44,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -e .[dev]
 
-pytest                                   # 142 tests, ~7 s
+pytest                                   # 147 tests, ~7 s
 python validation/run_all.py             # all literature comparisons, figures and tables (~25 s)
 python -m cp_engine                      # question-and-answer mode in the terminal
 jupyter notebook notebooks/CP_Engine_Demo.ipynb
@@ -115,7 +115,7 @@ data/components.json, data/binary_nrtl.json ─► database.py (loads, converts 
 | `plotting.py` | Publication figures (PNG and PDF, 300 dpi) |
 | `interactive.py` | ipywidgets form and the guided `input()` mode |
 | `validation/` | Five validation cases, `run_all.py`, data, results |
-| `tools/` | Data extraction (NIST ThermoML, digitiser), IAPWS ice, NRTL refit, zip and doc generators |
+| `tools/` | Data extraction (NIST ThermoML: Cp, VLE, γ∞, LLE; digitiser), IAPWS ice, NRTL and octadecane fits, zip and doc generators |
 
 ## 5. The thermodynamics behind each module
 
@@ -147,6 +147,16 @@ statement, because wᵢ = xᵢMᵢ/M.
   A non-convex curve would mean a false liquid–liquid split, which is wrong for water–ethanol.
 * **Held-out validation (case 2b):** every fit is repeated with part of the data left out (one isotherm,
   one paper, or one third of the freezing points) and the left-out part is predicted.
+* **Ethanol + toluene** (water-free pair) is fitted jointly to isobaric VLE (68 points, Chen et al. 2012,
+  activity coefficients from y P = x γ P_sat with NIST Antoine P_sat) and to measured Cpᴱ (Vega-Maza 2011).
+  Mixture Cp error falls from 8.3 % (ideal) to 1.3 %. A fit to the VLE alone already predicts Cpᴱ to
+  7 J/(mol K), but only the joint fit gets the Cpᴱ peak right.
+* **Runtime stability warning:** every NRTL pair the engine uses is checked for a spurious liquid–liquid
+  split at the working temperature. The literature acetone + water set fails above about 360 K, and the
+  engine says so.
+* **Infinite-dilution check (independent data):** γ∞ of ethanol in water is 35 % off with our Cp-optimised
+  set and 12 % off with the VLE set. Adding γ∞ to the fit was tried: γ∞ improved, but held-out Cpᴱ and
+  freezing points got worse, so we kept the Cp-optimised set (this is a Cp engine) and report the trade-off.
 * Pairs without parameters are treated as ideal, with a warning.
 
 ### 5.4 Heterogeneous mixtures (`models/heterogeneous.py`, `system.py`)
@@ -158,6 +168,9 @@ statement, because wᵢ = xᵢMᵢ/M.
   which is dimensionally inconsistent unless ρ_s = ρ_f. For CuO (ρ_s/ρ_f ≈ 6) it is off by up to 63 %.
 * Emulsions: immiscible liquids form separate liquid phases, and each phase is its own (real) solution.
   How a solute splits between the two phases is not modelled (the engine warns).
+* **Miscibility can depend on T and x.** For methanol + n-hexane the engine reads the measured
+  coexistence curve (Trejo et al. 2006, UCST 314.9 K): below the curve two liquids, above it one. If the
+  T₁–T₂ window crosses the curve the engine warns, because the heat of demixing is not included.
 
 ### 5.5 Phase change and apparent Cp (`models/phase_change.py`, `system.py`)
 * Total enthalpy: H(T) = Σ_phases Σᵢ nᵢᵖHᵢᵖ(T) + Σ_liquid nᵖHᴱ,ᵖ.
@@ -219,13 +232,17 @@ statement, because wᵢ = xᵢMᵢ/M.
 | 1 | 5 pure liquids vs NIST SRD 69 (128 points) | AARD 0.33 %, max 1.25 % | The pure-component data are correct |
 | 1 | 5 liquids at 0.1–100 MPa vs NIST (48 points) | **0.39 %** with Tait correction (1.85 % without) | The pressure correction works |
 | 1 | Water: cp from NIST cv via cp = cv + Tvα²/κ_T | AARD 0.02 % | The Cp–Cv identity and our α, κ_T are right |
+| 1 | Ideal-gas Cp of 5 components vs NIST, 200–1000 K | AARD 0.10–0.46 %, max 1.25 % | The vapour-phase correlations are right |
 | 2 | Water + ethanol Hᴱ (88 points) | fit 34 J/mol; **held-out 46 J/mol**; VLE parameters 256 | VLE parameters are not caloric parameters |
 | 2 | Water + methanol Hᴱ (151 points) | fit 23 J/mol; **held-out 48 J/mol**; VLE 141 | Same for methanol |
 | 2b | Water + ethanol Cpᴱ, source paper held out of the fit | **3.7 J/(mol K)** RMSD (VLE 9.1); peak ≈ 14.5 | Genuine prediction of Cpᴱ |
 | 2 | Water + methanol Cp (independent data) | ideal 7.5 %, VLE-NRTL 6.5 %, **Hᴱ-NRTL 2.7 %** | Gibbs–Helmholtz route to Cpᴱ works |
 | 2 | NaCl brine Cp, independent point | **0.17 %** (old Neumann–Kopp model 2.9 %) | Electrolyte model works |
 | 2 | Glycerol + water Cp, 162 points (x ≤ 0.08) | 0.52 % with the ideal fallback | Ideal mixing is adequate for dilute glycerol |
-| 2 | Ethanol + toluene Cp, no parameters | 8.3 % (ideal fallback) | Honest limitation: missing binary data |
+| 2 | Ethanol + toluene Cp (NRTL fitted to VLE + Cpᴱ) | fit **1.3 %** (max 3.1 %); ideal mixing 8.3 % | Binary parameters matter even for Cp |
+| 2b | Ethanol + toluene, held-out | Cpᴱ half held out **3.0 J/(mol K)**; Cpᴱ from VLE alone 7.1; VLE pressure held out RMS ln γ 0.04 | The fit predicts data it did not see |
+| 2 | Ethanol + toluene VLE bubble T (68 points) | mean 0.6 K, max 2.6 K | The same parameters give the phase equilibrium |
+| 2 | γ∞ in water (independent) | ethanol: Cp set 35 %, VLE set 12 %; acetone 25 % | Honest: a Cp-optimised set is not a γ∞ model |
 | 3 | Nanofluids, 69 DSC points (Al₂O₃, CuO, SiO₂) | **Model II 2.1 %**, Model I 18.5 % (max 63 %) | Mass weighting is right; Model I is wrong |
 | 4 | Freezing points ≤ 30 wt% ethanol | consistent NRTL: fit 1.7 K, **held-out 2.5 K**; ideal + ΔCp 0.84 K | The SLE behind ice-slurry Cp works |
 | 4 | Energy conservation through melting peaks | ≤ 0.006 % | Latent heat is neither lost nor double-counted |
@@ -242,6 +259,9 @@ What to say about the less good numbers:
   (−30 to −50 °C), far outside the range of the liquid-water Cp data. Ice slurries use 5–30 wt%.
 * *Dodecane under pressure:* 0.62 % with the correction vs 0.21 % without (only 5 points up to 40 MPa);
   for the other four liquids the correction cuts the error 2–18-fold.
+* *γ∞ of ethanol in water is 35 % off with our default set:* γ∞ is the x → 0 limit of Gᴱ, a region with
+  almost no weight in Hᴱ. Adding γ∞ to the fit made Cpᴱ and freezing points worse (case 2b), so for a
+  Cp engine we keep the Cp-optimised set; the VLE set is available (`nrtl_parameters="VLE"`).
 * *One NaCl dataset was excluded* (a buffer study whose NaCl values disagree with the dedicated study by
   1.1 %); the reason is written in `tools/fit_apparent_cp.py`.
 
@@ -256,14 +276,18 @@ What to say about the less good numbers:
   ice Cp (1.4 % low), CuO range, solid densities, NaCl solubility.
 * **Pressure and electrolyte data:** NIST isotherms (0.1–100 MPa) for 5 liquids; NaCl(aq) Cp and glycerol
   apparent molar Cp from the ThermoML archive (molality data are now converted too).
-* **Open:** low-impact flags (`docs/DATA_TO_VERIFY.md`); direct Cp data for water + ethanol (paywalled).
+* **Phase-equilibrium data (ThermoML):** ethanol + toluene VLE, γ∞ in water, methanol + alkane LLE.
+* **n-octadecane (PCM):** solid Cp and liquid density fitted to measurements (Fonseca 2014, Espeau 2006).
+* **Open:** low-impact flags (`docs/DATA_TO_VERIFY.md`, none can change a liquid Cp result by more than
+  a few tenths of a percent); direct Cp data for water + ethanol and DSC data for PCM emulsions (paywalled).
 
 ## 8. Limitations (say these before you are asked)
 
-1. Cpᴱ needs binary parameters. Three pairs are validated (water + ethanol and water + methanol fitted;
-   for dilute water + glycerol ideal mixing is adequate). Without parameters the engine falls back to
-   ideal mixing and warns (8 % error for ethanol + toluene).
-2. No vapour–liquid equilibrium for mixtures. Boiling of a mixture inside the interval is flagged, not computed.
+1. Cpᴱ needs binary parameters. Four pairs are validated (water + ethanol, water + methanol and
+   ethanol + toluene fitted; for dilute water + glycerol ideal mixing is adequate). Without parameters
+   the engine falls back to ideal mixing and warns (it was 8 % for ethanol + toluene before the fit).
+2. No vapour–liquid flash for mixtures. Boiling of a mixture inside the interval is flagged, not computed
+   (vapour pressures exist only for ethanol and toluene, used in fitting and validation).
 3. No solute partitioning between two liquid phases in emulsions; no experimental validation for emulsions
    or PCM slurries (no open DSC data found) beyond the energy-conservation checks.
 4. Electrolytes: only NaCl has an apparent-molar-Cp model, at 298 K (the engine warns elsewhere).
@@ -339,7 +363,7 @@ What to say about the less good numbers:
     By differencing H only with respect to the phase amounts: H(T; n(T±h)), with properties frozen at T.
     H is then linear in n, so there is no integration noise.
 21. **How did you test the code?**
-    142 pytest tests: units, limits (φ→0, φ→1, xᵢ→1, Cpᴱ→0 at the pure ends), ideal reduction,
+    147 pytest tests: units, limits (φ→0, φ→1, xᵢ→1, Cpᴱ→0 at the pure ends), ideal reduction,
     bad input, N = 2, 3 and 5 components, all routes, round trips, and regression tests against the
     literature data.
 22. **What happens with bad input?**
@@ -360,6 +384,19 @@ What to say about the less good numbers:
 26. **What errors did you find in your own data?**
     The acetone–water NRTL parameters had i and j swapped. We caught it by checking infinite-dilution
     activity coefficients. Glycerol Cp and ice Cp correlations were also replaced. See DATA_SOURCES §5.
+
+27a. **"Why is methanol + hexane two phases at 25 °C but one at 50 °C?"**
+    The pair has an upper critical solution temperature of 314.9 K (Trejo et al. 2006). The engine reads
+    the measured coexistence curve: below it two liquids, above it one solution. Across the curve the
+    heat of demixing is not modelled, and the engine warns.
+27b. **"How did you get NRTL parameters for ethanol + toluene?"**
+    From isobaric VLE (Chen et al. 2012): γᵢ = yᵢP/(xᵢP_sat,i) with NIST Antoine P_sat, fitted together with
+    measured Cpᴱ. Held-out tests: half the Cpᴱ points predicted to 3.0 J/(mol K); a fit to VLE alone predicts
+    Cpᴱ to 7.1. Mixture Cp: 1.3 % instead of 8.3 % for ideal mixing.
+27c. **"Your ethanol–water γ∞ is 35 % off. Isn't your NRTL wrong?"**
+    It is fitted for heat capacity. γ∞ is the dilute limit of Gᴱ, which barely affects Hᴱ. We tried adding
+    γ∞ to the fit: γ∞ improved but held-out Cpᴱ and freezing points got worse. We report both and let the
+    user switch to the VLE set for phase equilibrium.
 
 ### Questions from our own mock review (prepare these)
 27. **"Change P to 500 bar. Does Cp change? Derive (∂Cp/∂P)_T."**

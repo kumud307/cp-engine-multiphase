@@ -9,7 +9,7 @@
 | 1 | ethanol (liquid) | Cp (point values) | AARD % | 4 | 0.0626 | 0.15 | NIST WebBook | ok |
 | 1 | glycerol (liquid) | Cp (point values) | AARD % | 6 | 1.47 | 2.37 | NIST WebBook + O'Hanley et al. 2012 | ok |
 | 1 | n-octadecane (liquid) | Cp (point values) | AARD % | 2 | 0.317 | 0.634 | NIST WebBook | ok |
-| 1 | n-octadecane (solid) | Cp (point values) | AARD % | 1 | 0 | 0 | NIST WebBook | ok |
+| 1 | n-octadecane (solid) | Cp (point values) | AARD % | 1 | 0.546 | 0.546 | NIST WebBook | ok |
 | 1 | water | cp vs pressure 0.1-100 MPa (Tait pressure correction) | AARD % | 11 | 0.203 | 0.603 | NIST SRD 69 | ok |
 | 1 | water | cp vs pressure 0.1-100 MPa, without pressure correction (for comparison) | AARD % | 11 | 2.9 | 5.23 | NIST SRD 69 | ok |
 | 1 | methanol | cp vs pressure 0.1-100 MPa (Tait pressure correction) | AARD % | 11 | 0.47 | 0.805 | NIST SRD 69 | ok |
@@ -20,6 +20,11 @@
 | 1 | toluene | cp vs pressure 0.1-100 MPa, without pressure correction (for comparison) | AARD % | 11 | 1.39 | 2.16 | NIST SRD 69 | ok |
 | 1 | n-dodecane | cp vs pressure 0.1-100 MPa (Tait pressure correction) | AARD % | 5 | 0.616 | 0.939 | NIST SRD 69 | ok |
 | 1 | n-dodecane | cp vs pressure 0.1-100 MPa, without pressure correction (for comparison) | AARD % | 5 | 0.205 | 0.33 | NIST SRD 69 | ok |
+| 1 | acetone (ideal gas) | Cp 200-1000 K | AARD % | 11 | 0.457 | 1.25 | NIST WebBook (TRC / Chao / Scott / Draeger) | ok |
+| 1 | ethanol (ideal gas) | Cp 200-1000 K | AARD % | 11 | 0.225 | 0.523 | NIST WebBook (TRC / Chao / Scott / Draeger) | ok |
+| 1 | methanol (ideal gas) | Cp 200-1000 K | AARD % | 11 | 0.105 | 0.227 | NIST WebBook (TRC / Chao / Scott / Draeger) | ok |
+| 1 | n-hexane (ideal gas) | Cp 200-1000 K | AARD % | 11 | 0.384 | 0.934 | NIST WebBook (TRC / Chao / Scott / Draeger) | ok |
+| 1 | toluene (ideal gas) | Cp 200-1000 K | AARD % | 11 | 0.442 | 0.981 | NIST WebBook (TRC / Chao / Scott / Draeger) | ok |
 | 1 | water | cp from NIST cv via cp = cv + Tvα²/κ_T | AARD % | 20 | 0.0171 | 0.101 | NIST SRD 69 | ok |
 | 2 | ethanol + water | H^E, NRTL (VLE parameters) | RMSD J/mol | 88 | 256 | 630 | doi:10.1016/j.fluid.2007.06.007; doi:10.1016/j.fluid.2014.05.031; doi:10.1016/j.jct.2005.06.018; doi:10.1016/j.tca.2017.05.023 | ok |
 | 2 | ethanol + water | H^E, NRTL refitted (fit quality: these data were used in the fit; held-out tests in case 2b) | RMSD J/mol | 88 | 33.8 | 98 | doi:10.1016/j.fluid.2007.06.007; doi:10.1016/j.fluid.2014.05.031; doi:10.1016/j.jct.2005.06.018; doi:10.1016/j.tca.2017.05.023 | ok |
@@ -28,7 +33,12 @@
 | 2 | methanol + water | Cp, ideal mixture | AARD % | 12 | 7.47 | 12.8 | doi:10.1016/j.jct.2006.11.001 | ok |
 | 2 | methanol + water | Cp, NRTL, VLE parameters | AARD % | 12 | 6.51 | 11.4 | doi:10.1016/j.jct.2006.11.001 | ok |
 | 2 | methanol + water | Cp, NRTL refitted to H^E | AARD % | 12 | 2.71 | 7.54 | doi:10.1016/j.jct.2006.11.001 | ok |
-| 2 | ethanol + toluene | Cp, ideal fallback (no NRTL parameters) | AARD % | 11 | 8.33 | 12.3 | doi:10.1016/j.jct.2011.06.019 | ok |
+| 2 | ethanol + toluene | Cp, NRTL fitted to VLE + Cp^E (fit quality; held-out in case 2b) | AARD % | 11 | 1.29 | 3.14 | doi:10.1016/j.jct.2011.06.019 | ok |
+| 2 | ethanol + toluene | Cp, ideal mixture (for comparison) | AARD % | 11 | 8.33 | 12.3 | doi:10.1016/j.jct.2011.06.019 | ok |
+| 2 | ethanol + toluene | VLE bubble temperature (fit quality) | |ΔT| K | 60 | 0.625 | 2.56 | doi:10.1021/je200921u | ok |
+| 2 | ethanol in water | activity coefficient at infinite dilution, Cp-optimised set (H^E+SLE) | AARD % | 6 | 35 | 42.5 | doi:10.1021/je0495942; doi:10.1021/je049875+ | ok |
+| 2 | ethanol in water | activity coefficient at infinite dilution, VLE set | AARD % | 6 | 11.8 | 20.9 | doi:10.1021/je0495942; doi:10.1021/je049875+ | ok |
+| 2 | acetone in water | activity coefficient at infinite dilution, VLE set (literature) | AARD % | 11 | 24.6 | 26.4 | doi:10.1021/je0495942; doi:10.1021/je049875+ | ok |
 | 2 | glycerol + water | H^E, ideal fallback (H^E = 0) | RMSD J/mol | 9 | 466 | 611 | doi:10.1016/j.tca.2009.06.004 | ok |
 | 2 | ethanol + water | mean Cp^E 298-323 K from measured H^E(T), NRTL, VLE parameters | RMSD J/(mol K) | 19 | 9.12 | 13.3 | doi:10.1016/j.jct.2005.06.018 | ok |
 | 2 | ethanol + water | mean Cp^E 298-323 K from measured H^E(T), NRTL refitted to H^E (consistency check: data used in the fit; held-out version in case 2b) | RMSD J/(mol K) | 19 | 2.13 | 3.79 | doi:10.1016/j.jct.2005.06.018 | ok |
@@ -44,6 +54,9 @@
 | 2b | ice + water + ethanol | freezing points, 3-fold cross-validation (held-out), NRTL refitted (1 held-out point(s) with no predicted liquidus, excluded) | |ΔT| K | 16 | 2.51 | 2.51 | cross-validation | ok |
 | 2b | methanol + water | H^E, leave-one-temperature-band-out (held-out), NRTL refitted | RMSD J/mol | 151 | 48.1 | 95.9 | cross-validation | ok |
 | 2b | methanol + water | H^E, leave-one-temperature-band-out (held-out), VLE parameters (for comparison) | RMSD J/mol | 151 | 141 | 224 | cross-validation | ok |
+| 2b | ethanol + toluene | Cp^E predicted from VLE data alone (no Cp data in the fit) | RMSD J/(mol K) | 9 | 7.07 | 7.07 | cross-validation | ok |
+| 2b | ethanol + toluene | VLE activity coefficients, leave-one-pressure-out (held-out), NRTL refitted | RMS ln gamma | 60 | 0.0427 | 0.0528 | cross-validation | ok |
+| 2b | ethanol + toluene | Cp^E, every second composition held out, NRTL refitted | RMSD J/(mol K) | 9 | 2.95 | 3 | cross-validation | ok |
 | 3 | Al2O3 + water | cp, Model I (volume-weighted) | AARD % | 21 | 9.8 | 17.1 | O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised) | ok |
 | 3 | Al2O3 + water | cp, Model II = Route A (mass-weighted) | AARD % | 21 | 2.39 | 5.28 | O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised) | ok |
 | 3 | CuO + water | cp, Model I (volume-weighted) | AARD % | 24 | 34 | 63.3 | O'Hanley et al. 2012, doi:10.1155/2012/181079 (digitised) | ok |
@@ -62,7 +75,7 @@
 | 4 | ice + water + ethanol | freezing point, NRTL γ, VLE set, all, 2.5-72 wt% | |ΔT| K | 18 | 4.86 | 15.1 | Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)' | ok |
 | 4 | ice + water + ethanol | engine liquidus vs SLE equation | |ΔT| K | 13 | 1.4e-08 | 1.4e-08 | internal check | ok |
 | 4 | ice_ethanol_10wt | ∫cp_app dT vs ΔH (energy conservation) | rel. dev % | 1601 | 0.00575 | 0.00575 | internal check | ok |
-| 4 | pcm_octadecane_20wt | ∫cp_app dT vs ΔH (energy conservation) | rel. dev % | 1601 | 7.8e-09 | 7.8e-09 | internal check | ok |
+| 4 | pcm_octadecane_20wt | ∫cp_app dT vs ΔH (energy conservation) | rel. dev % | 1601 | 1.4e-08 | 1.4e-08 | internal check | ok |
 | 5 | water (pure) | Route B (Q) vs Route A (ΔH_model) | rel. dev % | 1 | 6.5e-14 | 6.5e-14 | self-consistency | ok |
 | 5 | water + ethanol 40 wt% | Route B (Q) vs Route A (ΔH_model) | rel. dev % | 1 | 2.9e-07 | 2.9e-07 | self-consistency | ok |
 | 5 | methanol + water + ethanol + glycerol | Route B (Q) vs Route A (ΔH_model) | rel. dev % | 1 | 2.6e-07 | 2.6e-07 | self-consistency | ok |

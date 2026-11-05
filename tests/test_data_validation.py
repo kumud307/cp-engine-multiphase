@@ -27,7 +27,8 @@ def binary(a, b, prop):
 
 
 def test_parameter_set_selection(db):
-    assert db.nrtl_pair("ethanol", "water")["fitted_to"] == "HE+SLE"        # default: H^E + freezing points
+    assert db.nrtl_pair("ethanol", "water")["fitted_to"] == "HE+SLE"        # H^E + freezing points
+    assert db.nrtl_pair("ethanol", "toluene")["fitted_to"] == "VLE+CpE"
     assert db.nrtl_pair("methanol", "water")["fitted_to"] == "HE"
     assert db.nrtl_pair("ethanol", "water", prefer="VLE")["fitted_to"] == "VLE"
     assert db.nrtl_pair("water", "ethanol")["a_ij"] == db.nrtl_pair("ethanol", "water")["a_ji"]   # orientation
@@ -84,3 +85,22 @@ def test_iapws_ice_check_values():
     assert r["cp"] == pytest.approx(0.209678431622e4, rel=1e-9)
     assert r["rho"] == pytest.approx(0.916709492200e3, rel=1e-9)
     assert r["kappa_T"] == pytest.approx(0.117793449348e-9, rel=1e-8)
+
+
+def test_gamma_inf_tradeoff_is_documented(db):
+    """The Cp-optimised water + ethanol set underpredicts gamma_inf of ethanol (a documented trade-off);
+    the literature VLE set is closer. Guard against silent changes either way."""
+    g = pd.read_csv(DATA / "thermoml_gamma_inf.csv", comment="#")
+    g = g[g.solute == "ethanol"]
+    err = lambda m: np.mean([abs(np.exp(m.ln_gamma([1e-9, 1 - 1e-9], T)[0]) - v) / v for T, v in zip(g.T_K, g.gamma_inf)]) * 100
+    assert 25 < err(NRTL(["ethanol", "water"], db)) < 45
+    assert err(NRTL(["ethanol", "water"], db, prefer="VLE")) < 15
+
+
+def test_ethanol_toluene_cp(engine):
+    """Cp of ethanol + toluene at 313 K (Vega-Maza et al. 2011): ideal mixing was 8.3 % off."""
+    cp = binary("ethanol", "toluene", "Cp_molar")
+    cp = cp[cp.P_kPa <= 200]
+    pred = np.array([engine.solve({"T": t, "mole_fractions": {"ethanol": x, "toluene": 1 - x}}).cp_molar
+                     for x, t in zip(cp.x, cp.T_K)])
+    assert np.mean(np.abs(pred - cp.value) / cp.value) * 100 < 2.0

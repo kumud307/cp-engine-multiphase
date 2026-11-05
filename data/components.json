@@ -226,8 +226,8 @@
           "unit": "J/(kmol K)",
           "Tmin": 200.0,
           "Tmax": 1500.0,
-          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107)",
-          "verify": true
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); checked 2026-11-05 against NIST WebBook ideal-gas Cp, 200-1000 K: max deviation 1.25 % (validation/data/nist_ideal_gas_cp.csv)",
+          "verify": false
         }
       },
       "density": {
@@ -255,7 +255,29 @@
           "source": "Isothermal compressibility at 298 K, CRC Handbook (Fluid properties)",
           "verify": true
         }
-      }
+      },
+      "antoine": [
+        {
+          "A": 5.24677,
+          "B": 1598.673,
+          "C": -46.424,
+          "Tmin": 292.77,
+          "Tmax": 366.63,
+          "unit": "bar",
+          "source": "NIST WebBook, Antoine equation parameters (Ambrose and Sprake 1970)",
+          "verify": false
+        },
+        {
+          "A": 4.92531,
+          "B": 1432.526,
+          "C": -61.819,
+          "Tmin": 364.8,
+          "Tmax": 513.91,
+          "unit": "bar",
+          "source": "NIST WebBook, Antoine equation parameters (Ambrose, Sprake et al. 1975)",
+          "verify": false
+        }
+      ]
     },
     "methanol": {
       "name": "Methanol",
@@ -323,8 +345,8 @@
           "unit": "J/(kmol K)",
           "Tmin": 200.0,
           "Tmax": 1500.0,
-          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); 44.0 J/(mol K) at 298 K",
-          "verify": true
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); 44.0 J/(mol K) at 298 K; checked 2026-11-05 against NIST WebBook ideal-gas Cp, 200-1000 K: max deviation 1.25 % (validation/data/nist_ideal_gas_cp.csv)",
+          "verify": false
         }
       },
       "density": {
@@ -507,8 +529,8 @@
           "unit": "J/(kmol K)",
           "Tmin": 200.0,
           "Tmax": 1500.0,
-          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); 74.4 J/(mol K) at 298 K",
-          "verify": true
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); 74.4 J/(mol K) at 298 K; checked 2026-11-05 against NIST WebBook ideal-gas Cp, 200-1000 K: max deviation 1.25 % (validation/data/nist_ideal_gas_cp.csv)",
+          "verify": false
         }
       },
       "density": {
@@ -603,8 +625,8 @@
           "unit": "J/(kmol K)",
           "Tmin": 200.0,
           "Tmax": 1500.0,
-          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107)",
-          "verify": true
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); checked 2026-11-05 against NIST WebBook ideal-gas Cp, 200-1000 K: max deviation 1.25 % (validation/data/nist_ideal_gas_cp.csv)",
+          "verify": false
         }
       },
       "density": {
@@ -705,8 +727,8 @@
           "unit": "J/(kmol K)",
           "Tmin": 200.0,
           "Tmax": 1500.0,
-          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107)",
-          "verify": true
+          "source": "Perry's 8th ed., Table 2-156 (DIPPR eq. 107); checked 2026-11-05 against NIST WebBook ideal-gas Cp, 200-1000 K: max deviation 1.25 % (validation/data/nist_ideal_gas_cp.csv)",
+          "verify": false
         }
       },
       "density": {
@@ -740,7 +762,29 @@
           "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 0.83 %",
           "verify": false
         }
-      }
+      },
+      "antoine": [
+        {
+          "A": 4.07827,
+          "B": 1343.943,
+          "C": -53.773,
+          "Tmin": 308.52,
+          "Tmax": 384.66,
+          "unit": "bar",
+          "source": "NIST WebBook, Antoine equation parameters (Williamham, Taylor et al. 1945)",
+          "verify": false
+        },
+        {
+          "A": 4.54436,
+          "B": 1738.123,
+          "C": 0.394,
+          "Tmin": 420.0,
+          "Tmax": 580.0,
+          "unit": "bar",
+          "source": "NIST WebBook, Antoine equation parameters (Ambrose, Broderick et al. 1967)",
+          "verify": false
+        }
+      ]
     },
     "n-dodecane": {
       "name": "n-Dodecane (vegetable-oil surrogate)",
@@ -848,13 +892,13 @@
       "Tm": {
         "value": 301.3,
         "unit": "K",
-        "source": "NIST WebBook (triple point, Parks et al. 1949; Messerly et al. 1967: 301.33 K)",
+        "source": "NIST WebBook (triple point, Parks et al. 1949; Messerly et al. 1967: 301.33 K); confirmed by 300.95-301.6 K in Wei et al. 2013/2014/2016, Fonseca et al. 2014, Parsa et al. 2015 (ThermoML)",
         "verify": false
       },
       "dHfus": {
         "value": 61.706,
         "unit": "kJ/mol",
-        "source": "NIST WebBook, Messerly, Guthrie et al. (1967) = 242.5 kJ/kg",
+        "source": "NIST WebBook, Messerly, Guthrie et al. (1967) = 242.5 kJ/kg; confirmed by 61.34-61.65 kJ/mol (Fonseca et al. 2014; Wei et al. 2013, 2014, 2016)",
         "verify": false
       },
       "Tb": {
@@ -881,22 +925,30 @@
           "verify": false
         },
         "solid": {
-          "type": "constant",
-          "value": 485.64,
+          "type": "poly",
+          "coeffs": [
+            -270.41143,
+            2.5447013
+          ],
           "unit": "J/(mol K)",
-          "Tmin": 270.0,
+          "Tmin": 280.0,
           "Tmax": 301.3,
-          "source": "NIST WebBook, Messerly, Guthrie et al. (1967) at 298.15 K - treated as constant (pre-melting ignored)",
-          "verify": true
+          "source": "Linear fit (tools/fit_octadecane.py) to Fonseca et al. 2014 (doi:10.1016/j.jct.2013.11.038, 283.85-290.46 K) and Messerly et al. 1967 at 298.15 K; max dev 0.8 %; rises toward T_m (pre-melting)",
+          "verify": false
         }
       },
       "density": {
         "liquid": {
-          "type": "constant",
-          "value": 777.0,
-          "unit": "kg/m3",
-          "source": "Commonly used PCM value near 303 K (literature range 724-777)",
-          "verify": true
+          "type": "poly",
+          "coeffs": [
+            1076.672,
+            -1.2105636,
+            0.00069106117
+          ],
+          "Tmin": 299.0,
+          "Tmax": 400.0,
+          "source": "Quadratic fit (tools/fit_octadecane.py) to the liquid specific volume of Espeau & Ceolin 2006 (doi:10.1016/j.tca.2006.04.001), 299-400 K; max dev 0.25 %",
+          "verify": false
         },
         "solid": {
           "type": "constant",
@@ -907,12 +959,6 @@
         }
       },
       "alpha": {
-        "liquid": {
-          "value": 0.00088,
-          "unit": "1/K",
-          "source": "Typical n-alkane liquid value (approx.)",
-          "verify": true
-        },
         "solid": {
           "value": 0.0003,
           "unit": "1/K",
@@ -924,8 +970,8 @@
         "liquid": {
           "value": 9e-10,
           "unit": "1/Pa",
-          "source": "Typical n-alkane liquid value (approx.)",
-          "verify": true
+          "source": "Consistent with densities at 323 K, 2-9.5 MPa (Kariznovi et al. 2012, doi:10.1016/j.fluid.2011.10.018): 6.77e-10 1/Pa (densities given to 1 kg/m3, so about ±25 %)",
+          "verify": false
         },
         "solid": {
           "value": 3e-10,

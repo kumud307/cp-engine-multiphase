@@ -3,7 +3,7 @@
 Case & Comparison & Metric & $N$ & mean & max \\
 \midrule
 1 & 5 pure liquids vs NIST SRD 69 (0.1 MPa) & AARD \% & 128 & 0.33 & 1.25 \\
-1 & 4 compounds, literature point values & AARD \% & 15 & 0.716 & 2.37 \\
+1 & 4 compounds, literature point values & AARD \% & 15 & 0.752 & 2.37 \\
 1 & 5 liquids, cp at 0.1-100 MPa (Tait pressure correction) & AARD \% & 48 & 0.389 & 1.22 \\
 1 & 5 liquids, cp at 0.1-100 MPa, no pressure correction & AARD \% & 48 & 1.85 & 5.23 \\
 1 & water: cp from NIST cv, cp = cv + Tv$\alpha^2$/$\kappa_T$ & AARD \% & 20 & 0.0171 & 0.101 \\
@@ -14,7 +14,12 @@ Case & Comparison & Metric & $N$ & mean & max \\
 2 & methanol + water: Cp, ideal mixture & AARD \% & 12 & 7.47 & 12.8 \\
 2 & methanol + water: Cp, NRTL, VLE parameters & AARD \% & 12 & 6.51 & 11.4 \\
 2 & methanol + water: Cp, NRTL refitted to H$^E$ & AARD \% & 12 & 2.71 & 7.54 \\
-2 & ethanol + toluene: Cp, ideal fallback (no NRTL parameters) & AARD \% & 11 & 8.33 & 12.3 \\
+2 & ethanol + toluene: Cp, NRTL fitted to VLE + Cp$^E$ (fit quality; held-out in case 2b) & AARD \% & 11 & 1.29 & 3.14 \\
+2 & ethanol + toluene: Cp, ideal mixture (for comparison) & AARD \% & 11 & 8.33 & 12.3 \\
+2 & ethanol + toluene: VLE bubble temperature (fit quality) & $|\Delta T|$ K & 60 & 0.625 & 2.56 \\
+2 & ethanol in water: activity coefficient at infinite dilution, Cp-optimised set (H$^E$+SLE) & AARD \% & 6 & 35 & 42.5 \\
+2 & ethanol in water: activity coefficient at infinite dilution, VLE set & AARD \% & 6 & 11.8 & 20.9 \\
+2 & acetone in water: activity coefficient at infinite dilution, VLE set (literature) & AARD \% & 11 & 24.6 & 26.4 \\
 2 & glycerol + water: H$^E$, ideal fallback (H$^E$ = 0) & RMSD J/mol & 9 & 466 & 611 \\
 2 & ethanol + water: mean Cp$^E$ 298-323 K from measured H$^E$(T), NRTL, VLE parameters & RMSD J/(mol K) & 19 & 9.12 & 13.3 \\
 2 & ethanol + water: mean Cp$^E$ 298-323 K from measured H$^E$(T), NRTL refitted to H$^E$ (consistency check: data used in the fit; held-out version in case 2b) & RMSD J/(mol K) & 19 & 2.13 & 3.79 \\
@@ -29,6 +34,9 @@ Case & Comparison & Metric & $N$ & mean & max \\
 2b & ice + water + ethanol: freezing points, 3-fold cross-validation (held-out), NRTL refitted (1 held-out point(s) with no predicted liquidus, excluded) & $|\Delta T|$ K & 16 & 2.51 & 2.51 \\
 2b & methanol + water: H$^E$, leave-one-temperature-band-out (held-out), NRTL refitted & RMSD J/mol & 151 & 48.1 & 95.9 \\
 2b & methanol + water: H$^E$, leave-one-temperature-band-out (held-out), VLE parameters (for comparison) & RMSD J/mol & 151 & 141 & 224 \\
+2b & ethanol + toluene: Cp$^E$ predicted from VLE data alone (no Cp data in the fit) & RMSD J/(mol K) & 9 & 7.07 & 7.07 \\
+2b & ethanol + toluene: VLE activity coefficients, leave-one-pressure-out (held-out), NRTL refitted & RMS ln gamma & 60 & 0.0427 & 0.0528 \\
+2b & ethanol + toluene: Cp$^E$, every second composition held out, NRTL refitted & RMSD J/(mol K) & 9 & 2.95 & 3 \\
 3 & all nanofluids: cp, Model I & AARD \% & 69 & 18.5 & 63.3 \\
 3 & all nanofluids: cp, Model II = Route A & AARD \% & 69 & 2.06 & 5.28 \\
 4 & ice + water + ethanol: freezing point, ideal, $\le$ 30 wt\% (ice-slurry range) & $|\Delta T|$ K & 13 & 1.06 & 3.85 \\
@@ -37,7 +45,7 @@ Case & Comparison & Metric & $N$ & mean & max \\
 4 & ice + water + ethanol: freezing point, NRTL $\gamma$, VLE set, $\le$ 30 wt\% (ice-slurry range) & $|\Delta T|$ K & 13 & 2.06 & 6.57 \\
 4 & ice + water + ethanol: engine liquidus vs SLE equation & $|\Delta T|$ K & 13 & 1.4e-08 & 1.4e-08 \\
 4 & ice ethanol 10wt: $\int$cp app dT vs $\Delta H$ (energy conservation) & rel. dev \% & 1601 & 0.00575 & 0.00575 \\
-4 & pcm octadecane 20wt: $\int$cp app dT vs $\Delta H$ (energy conservation) & rel. dev \% & 1601 & 7.8e-09 & 7.8e-09 \\
+4 & pcm octadecane 20wt: $\int$cp app dT vs $\Delta H$ (energy conservation) & rel. dev \% & 1601 & 1.4e-08 & 1.4e-08 \\
 5 & Route B vs Route A, 7 systems & rel. dev \% & 7 & 1.1e-07 & 2.9e-07 \\
 \bottomrule
 \end{tabular}

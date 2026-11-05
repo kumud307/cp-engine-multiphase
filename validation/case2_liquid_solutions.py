@@ -8,8 +8,10 @@ extracted by tools/extract_thermoml.py); each row carries the DOI of the origina
     -> NRTL with VLE parameters vs NRTL refitted to H^E (tools/fit_nrtl_he.py)
 2c  water + methanol  Cp, 280 and 320 K, 0.1 MPa (Tanaka, Fujita & Uematsu 2007) – INDEPENDENT test:
     the H^E-fitted model was never fitted to Cp, so this checks the Gibbs–Helmholtz route to Cp^E.
-2d  ethanol + toluene Cp, 313.15 K, 0.1 MPa (Vega-Maza et al. 2011) – no NRTL parameters exist,
-    so this tests the ideal-solution fallback.
+2d  ethanol + toluene Cp, 313.15 K, 0.1 MPa (Vega-Maza et al. 2011) and isobaric VLE (Chen et al. 2012):
+    NRTL fitted jointly to both (held-out tests in case 2b); the ideal mixture is shown for comparison.
+2j  activity coefficients at infinite dilution in water (Straver & de Loos 2005; Atik et al. 2004) –
+    independent of every fit.
 2e  water + glycerol  H^E, 298.15 K (Zehioua et al. 2009) – shows the size of H^E that the ideal
     fallback ignores for this pair.
 2f  water + ethanol   Cp – still PENDING: no open dataset was found (validation/data/water_ethanol_cp_exp.csv).
@@ -99,13 +101,43 @@ def run(save: bool = True) -> list[dict]:
                             "Water + methanol heat capacity", name="fig_cp_methanol_water", outdir=FIGS,
                             w=4.8, legend_outside=True)
 
-    # ---- 2d: ethanol + toluene Cp (no binary parameters) ------------------------------------------
+    # ---- 2d: ethanol + toluene Cp (NRTL fitted to VLE + Cp^E) and VLE ---------------------------
     et = binary(d, "ethanol", "toluene", "Cp_molar")
     et = et[et.P_kPa <= 200]
     p = np.array([engine.solve({"T": t, "mole_fractions": {"ethanol": x, "toluene": 1 - x}}).cp_molar
                   for x, t in zip(et.x, et.T_K)])
     a, mx, n = aard(p, et.value)
-    rows.append(row("2", "ethanol + toluene", "Cp, ideal fallback (no NRTL parameters)", n, a, mx, refs(et)))
+    rows.append(row("2", "ethanol + toluene", "Cp, NRTL fitted to VLE + Cp^E (fit quality; held-out in case 2b)",
+                    n, a, mx, refs(et)))
+    p0 = np.array([engine.solve({"T": t, "mole_fractions": {"ethanol": x, "toluene": 1 - x}, "solution_model": "ideal"}).cp_molar
+                   for x, t in zip(et.x, et.T_K)])
+    a, mx, n = aard(p0, et.value)
+    rows.append(row("2", "ethanol + toluene", "Cp, ideal mixture (for comparison)", n, a, mx, refs(et)))
+    # VLE of ethanol + toluene: bubble temperatures predicted with the stored NRTL + NIST Antoine Psat
+    from scipy.optimize import brentq
+    vle = load("thermoml_vle_ethanol_toluene.csv")
+    vle = vle[(vle.x_ethanol > 0) & (vle.x_ethanol < 1)]
+    m_et = NRTL(["ethanol", "toluene"], engine.db)
+    e_, t_ = engine.db.get("ethanol"), engine.db.get("toluene")
+
+    def bubble_T(x, P):
+        f = lambda T: (x * np.exp(m_et.ln_gamma([x, 1 - x], T)[0]) * e_.psat(T)
+                       + (1 - x) * np.exp(m_et.ln_gamma([x, 1 - x], T)[1]) * t_.psat(T)) - P
+        return brentq(f, 300.0, 450.0)
+    dT = [abs(bubble_T(x, P * 1e3) - T) for x, P, T in zip(vle.x_ethanol, vle.P_kPa, vle.T_K)]
+    rows.append(row("2", "ethanol + toluene", "VLE bubble temperature (fit quality)", len(dT), float(np.mean(dT)),
+                    float(np.max(dT)), "doi:10.1021/je200921u", metric="|ΔT| K"))
+
+    # activity coefficients at infinite dilution in water (independent: never used in a fit)
+    gi = load("thermoml_gamma_inf.csv")
+    for solute, prefer, label in (("ethanol", "HE", "Cp-optimised set (H^E+SLE)"), ("ethanol", "VLE", "VLE set"),
+                                  ("acetone", "VLE", "VLE set (literature)")):
+        g = gi[gi.solute == solute]
+        m = NRTL([solute, "water"], engine.db, prefer=prefer)
+        pred = [np.exp(m.ln_gamma([1e-9, 1 - 1e-9], t)[0]) for t in g.T_K]
+        a, mx, n = aard(pred, g.gamma_inf)
+        rows.append(row("2", f"{solute} in water", f"activity coefficient at infinite dilution, {label}", n, a, mx,
+                        "; ".join(f"doi:{d}" for d in sorted(g.doi.unique()))))
 
     # ---- 2e: glycerol + water H^E vs the ideal fallback (H^E = 0) -------------------------------
     gw = binary(d, "glycerol", "water", "HE")
