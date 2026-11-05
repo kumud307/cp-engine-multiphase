@@ -78,6 +78,40 @@ def main(folder: str) -> None:
             w.writerow([P, x, y.get((x, P), ""), Tb[(x, P)], doi])
     print(f"VLE ethanol + toluene: {len(Tb)} points")
 
+    # ---- bubble points of water + ethanol and water + methanol (every paper in the archive) -----------
+    rows = []
+    for f in sorted(folder.rglob("*.xml")):
+        text = f.read_text(encoding="utf-8", errors="ignore")
+        if "Boiling temperature" not in text or "water" not in text.lower():
+            continue
+        doi = f.relative_to(folder).as_posix()[:-4]
+        try:
+            r, names = load(folder, doi)
+        except ET.ParseError:
+            continue
+        for d in r.findall("PureOrMixtureData"):
+            cs = comps_of(d, names)
+            if None in cs or len(cs) != 2 or "water" not in cs or not ({"ethanol", "methanol"} & set(cs)):
+                continue
+            alc = [c for c in cs if c != "water"][0]
+            for rec in records(d, names):
+                T = rec.get(("PROP", "Boiling temperature at pressure P, K", None))
+                P = rec.get(("Pressure, kPa", None))
+                x = rec.get(("Mole fraction", alc))
+                if x is None and ("Mole fraction", "water") in rec:
+                    x = 1.0 - rec[("Mole fraction", "water")]
+                if None not in (T, P, x):
+                    rows.append([alc, P, x, T, doi])
+    rows = sorted({tuple(r) for r in rows}, key=lambda r: (r[0], r[4], r[1], r[2]))
+    with open(OUT / "thermoml_vle_water_alcohols.csv", "w", newline="", encoding="utf-8") as fh:
+        fh.write("# SOURCE: NIST ThermoML archive (doi:10.18434/mds2-2422): every binary water + ethanol and water +\n"
+                 "#   methanol boiling-point (T-x-P) data set in the archive; the DOI of each paper is given per row.\n"
+                 "# x = liquid mole fraction of the alcohol, T = boiling (bubble) temperature at pressure P.\n")
+        w = csv.writer(fh)
+        w.writerow(["alcohol", "P_kPa", "x_alcohol", "T_K", "doi"])
+        w.writerows(rows)
+    print(f"bubble points water + alcohols: {len(rows)} points")
+
     # ---- activity coefficients at infinite dilution in water -----------------------------------------
     rows = []
     for doi in ("10.1021/je0495942", "10.1021/je049875+"):

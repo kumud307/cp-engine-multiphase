@@ -41,6 +41,22 @@ if an output is already in K, compare (|Δ|/max > 2 % → inconsistency warning)
 - Heterogeneous mixture: c_p = Σ_phases w_p c_p,p (mass weighting).
   - Model I (inconsistent): c_p = φ c_p,s + (1 − φ) c_p,f.
   - Model II (thermal equilibrium): c_p = [φρ_s c_p,s + (1 − φ)ρ_f c_p,f] / [φρ_s + (1 − φ)ρ_f] ≡ mass weighting.
+- Vapour–liquid equilibrium (γ–φ, models/vle.py): y_i P = x_i γ_i P_i^sat (ideal vapour; option Lewis–Randall
+  φ_i = exp(B_ii P/RT)); P_i^sat from Antoine equations; non-volatile components K_i = 0.
+  - Bubble point: Σ K_i x_i = 1; dew point: Σ y_i / K_i = 1 (x_i ∝ y_i/K_i, iterated).
+  - Window below T_bubble → liquid; above T_dew → vapour; otherwise isothermal flash at each T:
+    Rachford–Rice Σ z_i (K_i − 1)/[1 + V(K_i − 1)] = 0, x_i = z_i/[1 + V(K_i − 1)], y_i = K_i x_i, iterate γ(x).
+  - NRTL set for the phase split: VLE-fitted (default); caloric properties keep the H^E-fitted set.
+  - Immiscible liquid phases: warn if Σ_phases P_bubble(T) = P inside the window (heterogeneous azeotrope).
+- Real gases (models/eos.py): C_p = C_p^ig(T) + C_p^R(T, P, y).
+  - Virial: Z = 1 + BP/RT, B P_c/(R T_c) = B⁰ + ωB¹ (Abbott), B_mix = ΣΣ y_i y_j B_ij (Prausnitz combining rules);
+    H^R = P(B − T dB/dT), C_p^R = −TP d²B/dT², ln φ̂_i = (P/RT)(2Σ_j y_j B_ij − B_mix).
+  - Cubic (vdW, RK, SRK, PR): P = RT/(V − b) − a(T)/[(V + εb)(V + σb)], a = ΣΣ x_i x_j √(a_i a_j)(1 − k_ij), b = Σ x_i b_i;
+    H^R/RT = Z − 1 + (d ln a/d ln T − 1) q I; C_p^R = (∂H^R/∂T)_P; ln φ̂_i = (b_i/b)(Z − 1) − ln(Z − β) − q̄_i I.
+  - Gas enthalpy: ideal-gas path from T_b + n[H^R(T, P, y) − Σ y_i H_i^R(T_b,i, 1 atm)] (keeps ΔH_vap at T_b exact).
+- Partial molar properties (models/partial_molar.py): C̄_p,i = C_p,i + ∂H̄_i^E/∂T, H̄_i^E = −RT² ∂ ln γ_i/∂T;
+  Σ x_i C̄_p,i = C_p; Gibbs–Duhem Σ x_i ∂ ln γ_i/∂x_j = 0 checked; ΔG_mix = RT Σ x ln x + G^E, ΔH_mix = H^E.
+- Uncertainty (uncertainty.py): u = √Σ (deviation_k × share_k)², deviations from validation/results/summary.csv.
 - Phase change:
   - Smooth melting of a pure component: f(T) = ½[1 + erf((T − T_m)/(σ√2))], σ = width/4.
   - Solid–liquid equilibrium: ln(x_k γ_k) = −(ΔH_fus/R)(1/T − 1/T_m) + (ΔCp/R)(T_m/T − 1 − ln(T_m/T)), ΔCp = Cp,L − Cp,S at T_m (consistent with the Kirchhoff enthalpies; γ_k from NRTL when the parameters were fitted to freezing points, else 1); tabulated solubility for electrolytes.

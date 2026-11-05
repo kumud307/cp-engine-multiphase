@@ -265,6 +265,67 @@ r = engine.solve({"T": "301.3 K", "mass_fractions": {"water": 0.8, "n-octadecane
 print([w for w in r.warnings if "depends on the assumed width" in w][0])
 """)
 
+md("### 8.6 A boiling mixture (vapour–liquid equilibrium)\n"
+   "A liquid mixture boils between its **bubble** and **dew** points, not at the boiling points of its components. "
+   "Modified Raoult's law y_i P = x_i γ_i P_i^sat (γ from NRTL, P^sat from Antoine equations fitted to NIST data); "
+   "between the two points an isothermal flash gives the vapour fraction and both compositions, and the latent heat "
+   "of what evaporates appears in the apparent Cp.")
+code(r"""
+for T, x in (("85 C", 0.05), ("84 C", 0.30), ("90 C", 0.50)):
+    r = engine.solve({"T": T, "mole_fractions": {"ethanol": x, "water": 1 - x}})
+    ex = r.breakdown.extras
+    vle = list(ex.get("vle", {}).values())
+    tb = f"bubble {vle[0]['T_bubble_K'] - 273.15:.1f} °C" if vle else ""
+    print(f"x_ethanol = {x:.2f} at {T}: {r.classification.split(';')[0]:45s} {tb}; "
+          f"vapour fraction {ex.get('vapour_mole_fraction_of_system', 0):.2f}; cp = {r.cp_mass:,.0f} J/(kg K)")
+""")
+code(r"""
+from cp_engine.models.vle import VLE
+from cp_engine.models.nrtl import NRTL
+v = VLE(["ethanol", "water"], engine.db, NRTL(["ethanol", "water"], engine.db, prefer="VLE"))
+for x in (0.85, 0.90, 0.95):
+    print(f"x = {x}: bubble {v.bubble_T(101325, [x, 1 - x]):.2f} K, dew {v.dew_T(101325, [x, 1 - x]):.2f} K")
+print("-> bubble = dew near x = 0.90, 351.3 K: the ethanol–water azeotrope")
+""")
+
+md("### 8.7 Equations of state from the CL 202 lectures\n"
+   "`cp_engine/models/eos.py` implements the virial equation (Pitzer/Abbott B, Prausnitz combining rules) and the "
+   "generic cubic (vdW, RK, SRK, PR). The lecture's worked CO₂ example comes out to within ±0.01 of the printed values (rounding):")
+code(r"""
+from cp_engine.models.eos import Critical, CubicEOS, VirialEOS
+co2 = Critical("CO2", 304.13, 73.77e5, 0.224, 94.07e-6)          # constants on the lecture slide
+print(f"Abbott B of CO2 at 350 K: {VirialEOS([co2]).B_mix(350, [1])[0] * 1e6:.2f} cm3/mol   (slide: -83.73)")
+slide = {"vdW": (52.55, 81.13), "RK": (45.62, 61.03), "SRK": (41.99, 58.42), "PR": (41.60, 51.68)}
+for kind, (ps, vl) in slide.items():
+    e = CubicEOS([co2], kind); P = e.psat(280.0)
+    print(f"{kind:3s}: Psat(280 K) = {P / 1e5:6.2f} bar (slide {ps}),  V_liq = {e.molar_volume(280, P, [1], 'liquid') * 1e6:6.2f} cm3/mol (slide {vl})")
+""")
+md("The same equations give the **residual heat capacity of real gases**, Cp = Cp^ig + Cp^R. Superheated steam at 100 bar:")
+code(r"""
+for eos in ("ideal", "virial", "PR"):
+    r = engine.solve({"T": "500 C", "P": "100 bar", "components": {"water": "gas"}, "gas_eos": eos})
+    print(f"{eos:6s}: cp = {r.cp_mass:6.0f} J/(kg K)")
+print("NIST SRD 69: 2583 J/(kg K)")
+""")
+
+md("### 8.8 Partial molar properties, Gibbs–Duhem and the uncertainty of a result\n"
+   "For a liquid solution the engine reports the partial molar Cp of each component (Σ x_i C̄p,i = Cp) and the "
+   "mixing functions. Every result also carries an expected deviation from measurements, built from the validation.")
+code(r"""
+r = engine.solve({"T": "25 C", "mole_fractions": {"ethanol": 0.3, "water": 0.7}})
+pc = r.breakdown.extras["partial_molar_cp_J_per_molK"]["liquid"]
+print("partial molar Cp:", {k: round(float(v), 2) for k, v in pc.items()})
+print(f"Σ x_i Cp_i = {0.3 * pc['Ethanol'] + 0.7 * pc['Water']:.2f}  vs  Cp = {r.cp_molar:.2f} J/(mol K)")
+print({k: round(float(v), 1) for k, v in r.breakdown.extras["mixing_functions_J_per_mol"]["liquid"].items()})
+from cp_engine.models import partial_molar as pmod
+m = NRTL(["ethanol", "water"], engine.db)
+print("Gibbs–Duhem residual Σ x_i ∂lnγ_i/∂x_1 =", pmod.gibbs_duhem_residual(lambda z: np.asarray(m.ln_gamma(list(z), 320.0)), [0.3, 0.7], 0))
+u = r.uncertainty
+print(f"\nexpected deviation: ± {u['relative_percent']:.1f} %")
+for c in u["contributions"]:
+    print(f"  {c['source']:45s} {c['percent_of_cp']:.2f} %   <- {c['validation'][:70]}")
+""")
+
 # ---------------------------------------------------------------------------
 md("## 9. Figures (saved to `figures/` as PNG and PDF, 300 dpi)")
 code(r"""
@@ -350,8 +411,10 @@ except Exception as e:
 md("## 13. Validation against literature data\n"
    "All comparisons use published measurements (provenance in `docs/DATA_SOURCES.md`): NIST SRD 69 (case 1), "
    "the NIST ThermoML archive (case 2: Hᴱ and Cp of water + alcohols, brine, glycerol, ethanol + toluene; case 2b: held-out cross-validation of every fit), O'Hanley et al. 2012 "
-   "nanofluid DSC data (case 3), Lange's freezing points of aqueous ethanol (case 4), and the Route A ↔ Route B "
-   "round trip (case 5). Metric column: AARD % for relative deviations, RMSD for excess properties, |ΔT| in K for freezing points.")
+   "nanofluid DSC data (case 3), Lange's freezing points of aqueous ethanol (case 4), the Route A ↔ Route B "
+   "round trip (case 5), and boiling mixtures, real gases and equations of state (case 6: 409 bubble points, NIST "
+   "vapour isobars and saturation curves). Metric column: AARD % for relative deviations, RMSD for excess properties, "
+   "|ΔT| in K for freezing and bubble points.")
 code(r"""
 import run_all
 summary = run_all.main(save=True)
@@ -360,7 +423,8 @@ summary[["case", "system", "quantity", "metric", "N", "mean", "max", "status"]]
 code(r"""
 from IPython.display import Image, display
 for f in ["val1_toluene", "fig_pressure", "fig_HE_water_ethanol", "fig_cpE_from_HE_water_ethanol", "fig_cp_methanol_water",
-          "fig_nanofluid_parity", "fig_nanofluid_models", "fig_freezing_points", "fig_cpT_ice_ethanol_10wt", "fig_pcm_peak"]:
+          "fig_nanofluid_parity", "fig_nanofluid_models", "fig_freezing_points", "fig_cpT_ice_ethanol_10wt", "fig_pcm_peak",
+          "fig_vle_water_ethanol", "fig_real_gas_steam"]:
     display(Image(filename=str(ROOT / "figures" / f"{f}.png"), width=460))
 """)
 

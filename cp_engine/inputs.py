@@ -23,7 +23,10 @@ Energies       Q [heat], W [work, W_shaft], W_pv [W_expansion], dH, dU, dS, dV
 Properties     Cv, gamma [Cp/Cv], alpha, kappa_T, density [rho]
 Options        melt_width, solution_model ("auto"|"ideal"|"nrtl"),
                sle_activity ("auto"|"ideal"|"nrtl"), liquid_phases, tolerance,
-               nrtl_parameters ("HE" = H^E-fitted set, default | "VLE")
+               nrtl_parameters ("HE" = H^E-fitted set, default | "VLE"),
+               vle_parameters ("VLE", default | "HE": NRTL set for boiling of mixtures),
+               vapour_model ("ideal", default | "lewis_randall": virial φ in the γ–φ VLE),
+               gas_eos ("PR", default | "SRK" | "RK" | "vdW" | "virial" | "ideal": residual Cp of gases)
 
 Sign convention (IUPAC): Q > 0 is heat ADDED TO the system; W > 0 is work
 DONE ON the system.  First law: ΔU = Q + W.
@@ -77,7 +80,8 @@ SYNONYMS = {
     "density": "density", "rho": "density",
     "melt_width": "melt_width", "solution_model": "solution_model",
     "sle_activity": "sle_activity", "liquid_phases": "liquid_phases",
-    "nrtl_parameters": "nrtl_parameters", "sle_dcp": "sle_dcp",
+    "nrtl_parameters": "nrtl_parameters", "sle_dcp": "sle_dcp", "gas_eos": "gas_eos", "eos": "gas_eos",
+    "vapour_model": "vapour_model", "vle_parameters": "vle_parameters",
     "tolerance": "tolerance",
 }
 COMPOSITION_KEYS = ("mole_fractions", "mass_fractions", "volume_fractions", "moles", "masses")
@@ -125,6 +129,9 @@ class SystemInput:
     solution_model: str | None = None
     sle_activity: str | None = None
     nrtl_parameters: str | None = None
+    vle_parameters: str | None = None
+    vapour_model: str | None = None
+    gas_eos: str | None = None
     liquid_phases: dict | None = None
     tolerance: float | None = None
 
@@ -267,7 +274,8 @@ def normalise(raw: dict | SystemInput, db: Database) -> NormalisedInput:
     # ---- options ----------------------------------------------------------
     if "melt_width" in d:
         out.options["melt_width"], _, _ = to_si(d["melt_width"], "temperature", name="melt_width")
-    for k in ("solution_model", "sle_activity", "liquid_phases", "tolerance", "nrtl_parameters", "sle_dcp"):
+    for k in ("solution_model", "sle_activity", "liquid_phases", "tolerance", "nrtl_parameters", "sle_dcp",
+              "gas_eos", "vapour_model", "vle_parameters"):
         if k in d:
             out.options[k] = d[k]
     if out.options.get("solution_model", "auto") not in ("auto", "ideal", "nrtl"):
@@ -276,6 +284,12 @@ def normalise(raw: dict | SystemInput, db: Database) -> NormalisedInput:
         raise InputError("sle_activity must be 'auto', 'ideal' or 'nrtl'.")
     if out.options.get("nrtl_parameters", "HE") not in ("HE", "VLE"):
         raise InputError("nrtl_parameters must be 'HE' (excess-enthalpy fitted) or 'VLE'.")
+    if out.options.get("vle_parameters", "VLE") not in ("HE", "VLE"):
+        raise InputError("vle_parameters must be 'VLE' (fitted to phase equilibrium) or 'HE'.")
+    if out.options.get("vapour_model", "ideal") not in ("ideal", "lewis_randall"):
+        raise InputError("vapour_model must be 'ideal' or 'lewis_randall'.")
+    if out.options.get("gas_eos", "PR") not in ("PR", "SRK", "RK", "vdW", "virial", "ideal"):
+        raise InputError("gas_eos must be one of PR, SRK, RK, vdW, virial, ideal.")
 
     # ---- components & composition -----------------------------------------
     _composition(d, db, out, T_ref)

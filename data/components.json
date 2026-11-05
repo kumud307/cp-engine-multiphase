@@ -156,6 +156,47 @@
           "source": "IAPWS R10-06(2009) ice Ih equation of state (Feistel & Wagner 2006), implemented in tools/iapws_ice.py and checked against Table 6 of the release to 9 digits, at 273.15 K",
           "verify": false
         }
+      },
+      "antoine": [
+        {
+          "A": 5.06077,
+          "B": 1648.7037,
+          "C": -46.9746,
+          "Tmin": 273.2,
+          "Tmax": 400.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.00 %",
+          "verify": false
+        },
+        {
+          "A": 5.084173,
+          "B": 1667.9751,
+          "C": -44.6265,
+          "Tmin": 390.0,
+          "Tmax": 500.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.06 %",
+          "verify": false
+        },
+        {
+          "A": 5.560988,
+          "B": 2143.6919,
+          "C": 17.915,
+          "Tmin": 490.0,
+          "Tmax": 620.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.30 %",
+          "verify": false
+        }
+      ],
+      "critical": {
+        "Tc": 647.096,
+        "Pc": 22064000.0,
+        "Vc": 55.947,
+        "omega": 0.3443,
+        "units": "K, Pa, cm3/mol",
+        "source": "Critical point of the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); ω from P_sat at 0.7 T_c",
+        "verify": false
       }
     },
     "ethanol": {
@@ -277,7 +318,16 @@
           "source": "NIST WebBook, Antoine equation parameters (Ambrose, Sprake et al. 1975)",
           "verify": false
         }
-      ]
+      ],
+      "critical": {
+        "Tc": 514.0,
+        "Pc": 6141000.0,
+        "Vc": null,
+        "omega": 0.6429,
+        "units": "K, Pa, cm3/mol",
+        "source": "Measured, doi:10.1016/j.fluid.2018.04.021 (514.0 ± 0.4 K, 6141 ± 51 kPa); doi:10.1016/j.jct.2013.03.002 gives 514.2 K, 6135 kPa; ω from the NIST Antoine equation at 0.7 T_c",
+        "verify": false
+      }
     },
     "methanol": {
       "name": "Methanol",
@@ -380,6 +430,37 @@
           "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 0.81 %",
           "verify": false
         }
+      },
+      "antoine": [
+        {
+          "A": 5.190011,
+          "B": 1572.7837,
+          "C": -34.2606,
+          "Tmin": 250.0,
+          "Tmax": 360.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.03 %",
+          "verify": false
+        },
+        {
+          "A": 5.217573,
+          "B": 1596.4272,
+          "C": -31.2336,
+          "Tmin": 350.0,
+          "Tmax": 490.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.15 %",
+          "verify": false
+        }
+      ],
+      "critical": {
+        "Tc": 512.597,
+        "Pc": 8103500.0,
+        "Vc": 97.545,
+        "omega": 0.5647,
+        "units": "K, Pa, cm3/mol",
+        "source": "Critical point of the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); ω from P_sat at 0.7 T_c",
+        "verify": false
       }
     },
     "glycerol": {
@@ -558,6 +639,27 @@
           "source": "Literature value at 298 K (approx.)",
           "verify": true
         }
+      },
+      "antoine": [
+        {
+          "A": 4.42448,
+          "B": 1312.253,
+          "C": -32.445,
+          "Tmin": 259.16,
+          "Tmax": 507.6,
+          "unit": "bar",
+          "source": "NIST WebBook (Ambrose, Sprake & Townsend 1974)",
+          "verify": false
+        }
+      ],
+      "critical": {
+        "Tc": 508.0,
+        "Pc": 4800000.0,
+        "Vc": null,
+        "omega": 0.3175,
+        "units": "K, Pa, cm3/mol",
+        "source": "NIST WebBook average of measured values (508 ± 2 K, 48 ± 4 bar); ω from the NIST Antoine equation at 0.7 T_c",
+        "verify": true
       }
     },
     "n-hexane": {
@@ -660,6 +762,37 @@
           "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 0.62 %",
           "verify": false
         }
+      },
+      "antoine": [
+        {
+          "A": 4.00687,
+          "B": 1173.2232,
+          "C": -48.6452,
+          "Tmin": 250.0,
+          "Tmax": 360.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.03 %",
+          "verify": false
+        },
+        {
+          "A": 4.37354,
+          "B": 1433.4343,
+          "C": -13.2121,
+          "Tmin": 350.0,
+          "Tmax": 490.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.81 %",
+          "verify": false
+        }
+      ],
+      "critical": {
+        "Tc": 507.82,
+        "Pc": 3044120.0,
+        "Vc": 369.547,
+        "omega": 0.3003,
+        "units": "K, Pa, cm3/mol",
+        "source": "Critical point of the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); ω from P_sat at 0.7 T_c",
+        "verify": false
       }
     },
     "toluene": {
@@ -775,6 +908,16 @@
           "verify": false
         },
         {
+          "A": 4.086994,
+          "B": 1350.9049,
+          "C": -52.7444,
+          "Tmin": 380.0,
+          "Tmax": 425.0,
+          "unit": "bar",
+          "source": "Fitted to the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); max deviation 0.00 %",
+          "verify": false
+        },
+        {
           "A": 4.54436,
           "B": 1738.123,
           "C": 0.394,
@@ -784,7 +927,16 @@
           "source": "NIST WebBook, Antoine equation parameters (Ambrose, Broderick et al. 1967)",
           "verify": false
         }
-      ]
+      ],
+      "critical": {
+        "Tc": 591.75,
+        "Pc": 4126390.0,
+        "Vc": 315.555,
+        "omega": 0.2657,
+        "units": "K, Pa, cm3/mol",
+        "source": "Critical point of the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); ω from P_sat at 0.7 T_c",
+        "verify": false
+      }
     },
     "n-dodecane": {
       "name": "n-Dodecane (vegetable-oil surrogate)",
@@ -870,6 +1022,15 @@
           "source": "Fit (tools/fit_kappa_nist.py) of ln(kappa_T) to NIST SRD 69 at 0.101325 MPa, kappa_T = (Cp/Cv)/(rho w^2); max dev 1.72 %",
           "verify": false
         }
+      },
+      "critical": {
+        "Tc": 657.957,
+        "Pc": 1813970.0,
+        "Vc": 641.62,
+        "omega": 0.5747,
+        "units": "K, Pa, cm3/mol",
+        "source": "Critical point of the NIST SRD 69 reference equation of state (saturation table, doi:10.18434/T4D303); ω from P_sat at 0.7 T_c",
+        "verify": false
       }
     },
     "n-octadecane": {

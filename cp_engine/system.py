@@ -13,6 +13,9 @@ Route A predicts Cp from state (T, P) and composition only.  The steps are
     smooth melting f(T), solid–liquid equilibrium, tabulated solubility.
 4.  Total enthalpy of the system (state function, extensive):
         H(T) = Σ_phases Σ_i n_i^p H_i^p(T)  +  Σ_liquid phases n^p H^E,p(T, x^p)
+    Liquid mixtures that boil are split by vapour–liquid equilibrium (bubble/dew points and an
+    isothermal flash, models/vle.py); gases get the residual enthalpy H^R(T, P, y) of an equation of
+    state (Peng–Robinson by default, models/eos.py), so C_p,gas = C_p^ig + C_p^R.
 5.  Apparent heat capacity = dH/dT, split into three parts by the chain rule:
         dH/dT = Σ n_i^p Cp_i^p             (ideal / sensible part)
               + Σ n^p Cp^E,p              (excess part, real solutions, NRTL)
@@ -33,10 +36,11 @@ from scipy import integrate
 
 from .database import P_ATM, Component, Database
 from .errors import DataError, InputError, PhaseError
-from .models import cv_cp, phase_change
+from .models import cv_cp, partial_molar, phase_change
 from .models.heterogeneous import cp_model_I
 from .models.nrtl import NRTL
 from .models.pure import enthalpy as pure_enthalpy
+from .models.vle import VLE
 from .report import Log
 
 DEFAULT_MELT_WIDTH = 2.0   # K; width of the smoothed melting step (≈95 % of melting)
@@ -50,8 +54,9 @@ BEHAVIOUR_TEXT = {
     "sle_ideal": "crystallises from / dissolves into the solution (solid–liquid equilibrium)",
     "sle_table": "partly dissolved (tabulated solubility, saturated slurry)",
     "boil_smooth": "boiling (pure, smoothed over a finite range)",
+    "vle": "boils as part of the mixture (vapour–liquid equilibrium: bubble/dew points, flash)",
 }
-PHASE_CHANGE_BEHAVIOURS = {"melt_smooth", "sle_ideal", "sle_table", "boil_smooth"}
+PHASE_CHANGE_BEHAVIOURS = {"melt_smooth", "sle_ideal", "sle_table", "boil_smooth", "vle"}
 
 
 def pure_phase_at(comp: Component, T: float, P: float = P_ATM) -> str:
@@ -132,11 +137,18 @@ class SystemModel:
         # which NRTL parameter set to use for pairs that have several: "HE" (excess-enthalpy
         # fitted – default, appropriate for caloric properties) or "VLE"
         self.nrtl_parameters = self.options.get("nrtl_parameters", "HE")
+        # parameter set for vapour–liquid equilibrium: "VLE" (default; fitted to phase-equilibrium data) or
+        # "HE". No single NRTL set reproduces H^E(T), freezing points and VLE of water + alcohols (joint fits
+        # double the Cp error), so caloric properties and the phase split use the set fitted to each.
+        self.vle_parameters = self.options.get("vle_parameters", "VLE")
+        self.vapour_model = self.options.get("vapour_model", "ideal")
+        self.gas_eos = self.options.get("gas_eos", "PR")
         self.log = log or Log()
         if abs(P - P_ATM) > 1.0:
-            self.log.assume(f"P = {P / 1e5:.4g} bar: pure-component Cp and H corrected from 1 atm with the exact "
+            self.log.assume(f"P = {P / 1e5:.4g} bar: liquid and solid Cp and H corrected from 1 atm with the exact "
                             "relations (∂Cp/∂P)_T = −T(∂²v/∂T²)_P and (∂H/∂P)_T = v − T(∂v/∂T)_P, v(T,P) from the "
-                            "Tait equation (validated against NIST to 1.2 % up to 100 MPa).")
+                            "Tait equation (validated against NIST to 1.2 % up to 100 MPa); gases get the residual "
+                            f"Cp^R(T, P) of the {self.gas_eos} equation of state.")
             if abs(P - P_ATM) > 1.0e8:
                 self.log.warn(f"P = {P / 1e6:.0f} MPa is beyond the 100 MPa range over which the pressure "
                               "correction was validated against NIST isotherms.")
@@ -147,6 +159,11 @@ class SystemModel:
         self._nrtl_cache: dict[tuple[str, ...], NRTL | None] = {}
         self._H_cache: dict[tuple, float] = {}
         self._stability_checked: set = set()
+        self._eos_cache: dict = {}
+        self._hr_ref: dict[str, float] = {}
+        self._vle_cache: dict = {}
+        self.vle_info: dict[str, dict[str, Any]] = {}
+        self._warned: set = set()
         self.window: tuple[float, float] | None = None
 
     # ==================================================================
@@ -159,11 +176,14 @@ class SystemModel:
         margin = 0.75 * self.width                    # 3σ of the smooth step
         lo, hi = T_lo - margin, T_hi + margin
         keys = list(self.amounts)
+        vle_status = self._vle_status(lo, hi)
 
         def liquid_capable(k: str) -> bool:
             c, s = self.comps[k], self.phase_spec[k]
             if s == "liquid":
                 return True
+            if k in vle_status:
+                return vle_status[k][0] != "gas"
             if s == "auto" and c.has_phase("liquid"):
                 Tb = c.Tb_at(self.P)
                 return not (Tb is not None and lo > Tb and c.has_phase("gas"))
@@ -207,6 +227,15 @@ class SystemModel:
                 continue
 
             Tm, Tb = c.Tm, c.Tb_at(self.P)
+            if k in vle_status:
+                status, why = vle_status[k]
+                if status == "gas":
+                    plans[k] = Plan(k, c, n, "fixed_gas", reason=why)
+                    continue
+                if status == "vle":
+                    plans[k] = Plan(k, c, n, "vle", reason=why)
+                    continue
+                Tb = None                       # below the bubble point: the pure boiling point is irrelevant
             partners = [j for j in keys if j != k and (
                 (liquid_capable(j) and self._miscible(k, j))
                 or self.phase_spec[j] == "dissolved"
@@ -247,8 +276,115 @@ class SystemModel:
         self._group_liquids()
         self._nrtl_cache.clear()
         self._H_cache.clear()
+        self._check_heteroazeotrope(lo, hi)
+
+    def _check_heteroazeotrope(self, lo: float, hi: float) -> None:
+        """Immiscible volatile liquids boil together when Σ_phases P_bubble = P (steam distillation),
+        below the boiling point of each liquid phase. Three-phase boiling is not modelled: warn."""
+        groups = [tuple(k for k in m if self._volatile(k) and self.plans[k].behaviour in ("fixed_liquid", "vle"))
+                  for m in self.groups.values()]
+        groups = [g for g in groups if g]
+        if len(groups) < 2:
+            return
+        tb = [self.comps[k].Tb_at(self.P) for g in groups for k in g]
+        if hi < min(t for t in tb if t) - 60.0:          # Σ P_sat = P is reached only near the boiling points
+            return
+
+        def total(T: float) -> float:
+            s = 0.0
+            for g in groups:
+                z = np.array([self.amounts[k] for k in g], float)
+                s += self._vle_model(g).bubble_P(T, z / z.sum())
+            return s - self.P
+        try:
+            from scipy.optimize import brentq
+            Th = brentq(total, 250.0, 650.0)
+        except (ValueError, DataError):
+            return
+        if hi >= Th:
+            names = " | ".join(" + ".join(self.comps[k].name for k in g) for g in groups)
+            self.log.warn(f"The immiscible liquid phases ({names}) boil together at about {Th:.1f} K, where the sum of "
+                          f"their vapour pressures reaches {self.P / 1e5:.4g} bar (heterogeneous azeotrope, as in steam "
+                          "distillation). This three-phase boiling is not modelled: results above that temperature "
+                          "treat the liquids as not boiling.")
 
     # ------------------------------------------------------------------
+    def _volatile(self, k: str) -> bool:
+        c = self.comps[k]
+        return bool(c.raw.get("antoine")) and c.has_phase("gas") and c.has_phase("liquid")
+
+    def _vle_model(self, members: tuple[str, ...]) -> VLE:
+        if members not in self._vle_cache:
+            nrtl = None
+            if self.solution_model != "ideal" and len(members) > 1:
+                m = NRTL(list(members), self.db, prefer=self.vle_parameters)
+                nrtl = m if m.has_any_parameters else None
+            self._vle_cache[members] = VLE(list(members), self.db, nrtl, log=self.log, vapour=self.vapour_model)
+        return self._vle_cache[members]
+
+    def _vle_status(self, lo: float, hi: float) -> dict[str, tuple[str, str]]:
+        """Phase behaviour of miscible liquid mixtures that contain volatile components.
+
+        For every cluster of mutually miscible liquids (≥ 2 components, ≥ 1 volatile) the bubble and
+        dew temperatures at P are computed from the overall composition:
+          window below the bubble point → liquid (whatever the pure boiling points are);
+          window above the dew point    → gas;
+          otherwise                     → vapour–liquid equilibrium (flash at each T).
+        """
+        self.vle_info = {}
+        cand = [k for k in self.amounts
+                if self.phase_spec[k] == "auto" and self.comps[k].has_phase("liquid")
+                and (self.comps[k].Tm is None or hi > self.comps[k].Tm)]
+        clusters: list[list[str]] = []
+        for k in sorted(cand, key=lambda k: -self.amounts[k]):
+            for g in clusters:
+                if all(self._miscible(k, j) for j in g):
+                    g.append(k)
+                    break
+            else:
+                clusters.append([k])
+        out: dict[str, tuple[str, str]] = {}
+        for g in clusters:
+            if len(g) < 2 or not any(self._volatile(k) for k in g):
+                continue
+            members = tuple(g)
+            tb = [self.comps[k].Tb_at(self.P) for k in members if self._volatile(k)]
+            if hi < min(t for t in tb if t) - 40.0:
+                continue                         # far below every boiling point (azeotropes are within a few K)
+            z = np.array([self.amounts[k] for k in members])
+            z = z / z.sum()
+            try:
+                v = self._vle_model(members)
+                Tbub = v.bubble_T(self.P, z)
+                Tdew = v.dew_T(self.P, z) if hi >= Tbub else float("nan")
+            except (ValueError, DataError) as exc:
+                self.log.warn(f"Bubble/dew point of {', '.join(self.comps[k].name for k in members)} could not be "
+                              f"computed ({exc}); boiling of the mixture is not modelled.")
+                continue
+            names = " + ".join(self.comps[k].name for k in members)
+            self.vle_info[" + ".join(members)] = {"members": members, "T_bubble": Tbub, "T_dew": Tdew}
+            dew_txt = ("not needed (interval below the bubble point)" if np.isnan(Tdew) else
+                       "infinite (non-volatile component present)" if not np.isfinite(Tdew) else f"{Tdew:.2f} K")
+            self.log.note(f"{names} at {self.P / 1e5:.4g} bar: bubble point {Tbub:.2f} K, dew point {dew_txt} "
+                          "(γ–φ vapour–liquid equilibrium, NRTL γ, Antoine P_sat).")
+            low_Tm = max((self.comps[k].Tm or 0.0) for k in members)
+            if hi < Tbub:
+                st = ("liquid", f"liquid: below the bubble point of the mixture ({Tbub:.1f} K)")
+            elif lo > Tdew:
+                st = ("gas", f"vapour: above the dew point of the mixture ({Tdew:.1f} K)")
+            elif lo < low_Tm:
+                self.log.warn(f"The interval spans both freezing and boiling of {names}; boiling is not modelled "
+                              "over such a wide interval. Split the interval at the normal liquid range.")
+                st = ("liquid", "liquid (interval too wide for the boiling model)")
+            else:
+                st = ("vle", f"bubble point {Tbub:.1f} K, dew point {dew_txt}")
+            for k in members:
+                if st[0] != "gas" or self._volatile(k):
+                    out[k] = st
+                else:                             # non-volatile member of a vapourised mixture
+                    out[k] = ("liquid", "non-volatile: stays liquid")
+        return out
+
     def _pair_state(self, a: str, b: str) -> tuple[float | None, float]:
         """(temperature, mole fraction of a in the a–b pair) used to decide miscibility."""
         T = 0.5 * (self.window[0] + self.window[1]) if self.window else None
@@ -274,7 +410,7 @@ class SystemModel:
     def _group_liquids(self) -> None:
         """Assign liquid-capable components to liquid phases."""
         solvents = [k for k, p in self.plans.items()
-                    if p.behaviour in ("fixed_liquid", "sle_ideal", "melt_smooth", "boil_smooth")]
+                    if p.behaviour in ("fixed_liquid", "sle_ideal", "melt_smooth", "boil_smooth", "vle")]
         solutes = [k for k, p in self.plans.items() if p.behaviour in ("dissolved", "sle_table")]
         groups: dict[str, list[str]] = {}
         user = self.options.get("liquid_phases")
@@ -439,6 +575,14 @@ class SystemModel:
         liquid_amounts: dict[str, float] = {}
         for gname in self.groups:
             liquid_amounts.update(self._solve_sle(gname, T))
+        vapour: dict[str, float] = {}
+        for gname, members in self.groups.items():
+            vle = tuple(k for k in members if self.plans[k].behaviour == "vle")
+            if vle:
+                V, x, y = self._vle_model(vle).flash(T, self.P, [self.amounts[k] for k in vle])
+                ntot = sum(self.amounts[k] for k in vle)
+                for k, yi in zip(vle, y):
+                    vapour[k] = min(self.amounts[k], V * ntot * yi)
         for k, p in self.plans.items():
             n = p.n
             if p.behaviour.startswith("fixed_"):
@@ -454,6 +598,9 @@ class SystemModel:
             elif p.behaviour == "boil_smooth":
                 f = phase_change.melt_fraction(T, p.comp.Tb_at(self.P), self.width)
                 entries += [(p.group, k, "liquid", (1 - f) * n), ("gas", k, "gas", f * n)]
+            elif p.behaviour == "vle":
+                nV = vapour.get(k, 0.0)
+                entries += [(p.group, k, "liquid", n - nV), ("gas", k, "gas", nV)]
             elif p.behaviour == "sle_ideal":
                 nL = liquid_amounts[k]
                 entries += [(p.group, k, "liquid", nL), (f"solid ({p.comp.name})", k, "solid", n - nL)]
@@ -528,7 +675,65 @@ class SystemModel:
                 x = [comp_n.get(m, 0.0) / tot for m in self.groups[gname]]
                 H += tot * model.hE(x, T)
         H += self._electrolyte_terms(T, entries)[1]
+        H += self._gas_residual(T, entries)[1]
         return H
+
+    def _eos(self, keys: tuple[str, ...]):
+        if keys not in self._eos_cache:
+            self._eos_cache[keys] = self.db.eos(list(keys), self.gas_eos)
+        return self._eos_cache[keys]
+
+    def _gas_residual(self, T: float, entries) -> tuple[float, float]:
+        """(C_p^R, H^R) of the gas phase in J/K and J (real-gas correction from the equation of state).
+
+        H_gas = Σ n_i H_i^gas(T) [ideal-gas path from the normal boiling point]
+                + n [H^R(T, P, y) − Σ y_i H_i^R(T_b,i, 1 atm)];
+        the reference term keeps the measured enthalpy of vaporisation at T_b exact.
+        """
+        if self.gas_eos == "ideal":
+            return 0.0, 0.0
+        gas: dict[str, float] = {}
+        for _, k, state, n in entries:
+            if state == "gas" and n > 0:
+                gas[k] = gas.get(k, 0.0) + n
+        if not gas:
+            return 0.0, 0.0
+        keys = tuple(sorted(gas))
+        ntot = sum(gas.values())
+        y = [gas[k] / ntot for k in keys]
+        try:
+            eos = self._eos(keys)
+        except (DataError, ValueError) as exc:
+            if "eos" not in self._warned:
+                self._warned.add("eos")
+                self.log.assume(f"Gas phase treated as an ideal gas ({exc}).")
+            return 0.0, 0.0
+        # a vapour below its dew point (Σ y_i P / P_sat,i > 1) would condense: no EOS vapour root to trust
+        s = 0.0
+        for k, yi in zip(keys, y):
+            c = self.comps[k]
+            if c.raw.get("antoine") and c.critical and T < c.critical.Tc:
+                s += yi * self.P / c.psat(T)
+        if s > 1.02:
+            if "supersat" not in self._warned:
+                self._warned.add("supersat")
+                self.log.warn(f"The gas phase at {T:.1f} K and {self.P / 1e5:.4g} bar is below its dew point "
+                              "(it would condense); ideal-gas properties used for it.")
+            return 0.0, 0.0
+        if "eos_note" not in self._warned:
+            self._warned.add("eos_note")
+            self.log.assume(f"Gas phase: C_p = C_p^ig + C_p^R, residual part from the {self.gas_eos} equation of "
+                            "state (critical constants and ω from NIST data; k_ij = 0).")
+        ref = 0.0
+        for k, yi in zip(keys, y):
+            if k not in self._hr_ref:
+                c = self.comps[k]
+                try:
+                    self._hr_ref[k] = self.db.eos([k], self.gas_eos).H_residual(c.Tb or T, P_ATM, [1.0])
+                except (DataError, ValueError):
+                    self._hr_ref[k] = 0.0
+            ref += yi * self._hr_ref[k]
+        return ntot * eos.Cp_residual(T, self.P, y), ntot * (eos.H_residual(T, self.P, y) - ref)
 
     def _electrolyte_terms(self, T: float, entries) -> tuple[float, float]:
         """(Cp, H) corrections for dissolved electrolytes with an apparent-molar-Cp model.
@@ -581,6 +786,7 @@ class SystemModel:
                 x = [comp_n.get(m, 0.0) / tot for m in self.groups[gname]]
                 excess += tot * model.cpE(x, T)
         excess += self._electrolyte_terms(T, entries)[0]
+        excess += self._gas_residual(T, entries)[0]
         return ideal, excess
 
     @property
@@ -636,6 +842,10 @@ class SystemModel:
             for Tt in (p.comp.Tm, p.comp.Tb_at(self.P)):
                 if Tt is not None and a < Tt < b:
                     breaks.append(Tt)
+        for info in self.vle_info.values():
+            for Tt in (info["T_bubble"], info["T_dew"]):
+                if np.isfinite(Tt) and a < Tt < b:
+                    breaks.append(Tt)
         # absolute tolerance relative to the size of the integral (J); the excess
         # integrand can be ~0, where a purely relative tolerance is unreachable
         scale = abs(dH) + self.mass * 1000.0 * abs(dT)
@@ -677,6 +887,28 @@ class SystemModel:
     def _extras(self, T: float, entries) -> dict[str, Any]:
         """Extra diagnostics: Model I comparison for suspensions, Cv estimate."""
         ex: dict[str, Any] = {}
+        for name, info in self.vle_info.items():
+            ex.setdefault("vle", {})[name] = {"T_bubble_K": info["T_bubble"], "T_dew_K": info["T_dew"]}
+        for gname, comp_n in self._liquid_groups(entries).items():
+            model = self._nrtl(tuple(self.groups[gname]))
+            members = self.groups[gname]
+            if model is None or any(self.plans[k].behaviour in ("dissolved", "sle_table") for k in members):
+                continue
+            try:
+                tot = sum(comp_n.values())
+                x = [comp_n.get(m, 0.0) / tot for m in members]
+                cpE_bar = partial_molar.partial_molar_cpE(model, x, T)
+                ex.setdefault("partial_molar_cp_J_per_molK", {})[gname] = {
+                    self.comps[m].name: self._pure_cp(m, "liquid", T) + cpE_bar[i] for i, m in enumerate(members)}
+                ex.setdefault("mixing_functions_J_per_mol", {})[gname] = partial_molar.mixing_functions(model, x, T)
+            except Exception:                     # diagnostics only
+                pass
+        gas_n = sum(n for _, _, st, n in entries if st == "gas")
+        if gas_n > 0:
+            ex["vapour_mole_fraction_of_system"] = gas_n / self.moles
+            ex["vapour_composition"] = {self.comps[k].name: n / gas_n for _, k, st, n in entries if st == "gas" and n > 0}
+            if self.gas_eos != "ideal":
+                ex["gas_residual_cp_J_per_K"] = self._gas_residual(T, entries)[0]
         try:
             rho, alpha, kappa = self.volumetric_properties(T, entries)
             ex["rho_mix"], ex["alpha_mix"], ex["kappa_T_mix"] = rho, alpha, kappa
@@ -730,7 +962,7 @@ class SystemModel:
         n_liq = len(self.groups)
         has_solid = any(p.behaviour in ("fixed_solid", "sle_ideal", "sle_table", "melt_smooth")
                         for p in self.plans.values())
-        gases = [k for k, p in self.plans.items() if p.behaviour in ("fixed_gas", "boil_smooth")]
+        gases = [k for k, p in self.plans.items() if p.behaviour in ("fixed_gas", "boil_smooth", "vle")]
         parts = []
         if len(self.plans) == 1:
             parts.append("Pure component")
@@ -747,14 +979,17 @@ class SystemModel:
             if n_liq == 1 and not has_solid and not gases:
                 parts.append("Homogeneous liquid solution")
             elif n_liq == 0 and not has_solid:
-                parts.append("Ideal-gas mixture")
+                parts.append("Gas mixture" + (" (ideal gas)" if self.gas_eos == "ideal" else
+                                              f" (ideal-gas Cp + {self.gas_eos} residual)"))
             else:
                 features = []
                 if has_solid:
                     features.append("solid particles (suspension / slurry)" if n_liq else "solid phases")
                 if n_liq >= 2:
                     features.append("immiscible liquid phases (emulsion)")
-                if gases and (n_liq or has_solid):
+                if any(p.behaviour == "vle" for p in self.plans.values()):
+                    features.append("vapour–liquid equilibrium")
+                elif gases and (n_liq or has_solid):
                     features.append("gas phase")
                 parts.append("Heterogeneous mixture: " + " + ".join(features))
             parts += liquid_desc

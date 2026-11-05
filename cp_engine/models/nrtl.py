@@ -228,12 +228,16 @@ def fit_nrtl_joint(he: tuple | None, sle: tuple | None = None, alpha: float = 0.
                    fit: Sequence[str] = ("a12", "a21", "b12", "b21", "e12", "e21"),
                    initial: dict | None = None, sigma_he: float = 30.0, sigma_sle: float = 0.01,
                    cpe: tuple | None = None, sigma_cpe: float = 0.5,
-                   lng: tuple | None = None, sigma_lng: float = 0.03) -> dict:
+                   lng: tuple | None = None, sigma_lng: float = 0.03,
+                   bubble: tuple | None = None, sigma_bubble: float = 0.01) -> dict:
     """Fit binary NRTL parameters to excess enthalpies and (optionally) solid–liquid equilibrium data.
 
     he  = (x1, T, H^E in J/mol), or None
     lng = (x1, T, ln γ1, ln γ2) activity coefficients, e.g. from VLE data via y P = x γ Psat
     cpe = (x1, T, Cp^E in J/(mol K)), optional excess heat capacities
+    bubble = (x1, T, P, P1_sat(T), P2_sat(T)): measured bubble points (T-x-P, no vapour composition);
+          residual = ln[(x1 γ1 P1_sat + x2 γ2 P2_sat) / P] / sigma_bubble  (modified Raoult's law;
+          sigma_bubble = 0.01 is 1 % in pressure, about 0.3 K in temperature)
     sle = (x1, T_freeze, Tm, dHfus, dCp, k): freezing points where pure component k (0 or 1)
           crystallises; residual = [ln x_k + ln γ_k(x, T) − sle_rhs(T)] / sigma_sle
           (sigma_sle = 0.01 in ln x corresponds to about 1 K for ice).
@@ -263,6 +267,10 @@ def fit_nrtl_joint(he: tuple | None, sle: tuple | None = None, alpha: float = 0.
             for x, t, l1, l2 in zip(*lng):
                 g = m.ln_gamma([x, 1 - x], t)
                 r += [(g[0] - l1) / sigma_lng, (g[1] - l2) / sigma_lng]
+        if bubble is not None:
+            for x, t, P, p1, p2 in zip(*bubble):
+                g = m.gamma([x, 1 - x], t)
+                r.append(np.log((x * g[0] * p1 + (1 - x) * g[1] * p2) / P) / sigma_bubble)
         if sle is not None:
             xs, Ts, Tm, dH, dCp, k = sle
             for x, t in zip(xs, Ts):
@@ -277,8 +285,8 @@ def fit_nrtl_joint(he: tuple | None, sle: tuple | None = None, alpha: float = 0.
             if len(x1) else float("nan"))
     return {"a_ij": q["a12"], "a_ji": q["a21"], "b_ij": q["b12"], "b_ji": q["b21"], "e_ij": q["e12"],
             "e_ji": q["e21"], "f_ij": q["f12"], "f_ji": q["f21"], "c": alpha, "d": 0.0,
-            "fitted_to": "+".join([k for k, v in (("HE", he), ("VLE", lng), ("CpE", cpe), ("SLE", sle))
-                                   if v is not None]),
+            "fitted_to": "+".join([k for k, v in (("HE", he), ("VLE", lng if lng is not None else bubble),
+                                                  ("CpE", cpe), ("SLE", sle)) if v is not None]),
             "rmse": rmse, "cost": cost, "success": bool(res.success),
             "model": m}
 
@@ -286,14 +294,16 @@ def fit_nrtl_joint(he: tuple | None, sle: tuple | None = None, alpha: float = 0.
 def fit_nrtl_best(he: tuple, sle: tuple | None, initial: dict, alphas=(0.2, 0.3, 0.4, 0.47),
                   forms=(("a12", "a21", "b12", "b21"), ("a12", "a21", "b12", "b21", "e12", "e21")),
                   T_stable=(220, 390), cpe: tuple | None = None, lng: tuple | None = None,
-                  score: str = "he", sigma_lng: float = 0.03) -> dict:
+                  score: str = "he", sigma_lng: float = 0.03, bubble: tuple | None = None,
+                  sigma_bubble: float = 0.01) -> dict:
     """Try several α values and τ(T) forms; keep the lowest-H^E-error set that is phase-stable
     (no liquid–liquid split) over T_stable. Returns the fit dict (see fit_nrtl_joint).
     score = "he" ranks candidates by their H^E error, "cost" by the total weighted residual."""
     best = None
     for alpha in alphas:
         for form in forms:
-            f = fit_nrtl_joint(he, sle, alpha, form, initial, cpe=cpe, lng=lng, sigma_lng=sigma_lng)
+            f = fit_nrtl_joint(he, sle, alpha, form, initial, cpe=cpe, lng=lng, sigma_lng=sigma_lng,
+                               bubble=bubble, sigma_bubble=sigma_bubble)
             if all(f["model"].is_stable_binary(T, 600) for T in range(T_stable[0], T_stable[1] + 1, 10)):
                 key = f["rmse"] if score == "he" else f["cost"]
                 if best is None or key < best["_key"]:

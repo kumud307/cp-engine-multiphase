@@ -16,20 +16,27 @@ import case2b_crossvalidation
 import case3_nanofluid
 import case4_phase_change
 import case5_route_consistency
+import case6_vle_real_gas
 from common import RESULTS
 
 TEX = {"%": r"\%", "_": " ", "∫": r"$\int$", "ΔH": r"$\Delta H$", "ΔCp": r"$\Delta C_p$", "|ΔT|": r"$|\Delta T|$",
        "α²": r"$\alpha^2$", "κ T": r"$\kappa_T$", "φ": r"$\phi$", "^E": r"$^E$", "γ": r"$\gamma$", "≤": r"$\le$",
-       "–": "--", "≥": r"$\ge$", "Σ": r"$\Sigma$"}
+       "–": "--", "≥": r"$\ge$", "Σ": r"$\Sigma$", "φ_L = φ_V": r"$\phi_L = \phi_V$", "C_p^R": r"$C_p^R$",
+       "T_c": r"$T_c$"}
 
 
 def tex(s: str) -> str:
     s = str(s)
-    for k in ("%", "_"):
-        s = s.replace(k, TEX[k])
+    s = s.replace("%", TEX["%"])
+    multi = [k for k in TEX if "_" in k and k != "_"]          # e.g. C_p^R, T_c: before the bare "_"
+    for k in multi:
+        s = s.replace(k, f"\x00{multi.index(k)}\x00")
+    s = s.replace("_", TEX["_"])
     for k, v in TEX.items():
-        if k not in ("%", "_"):
+        if k not in ("%", "_") and k not in multi:
             s = s.replace(k, v)
+    for i, k in enumerate(multi):
+        s = s.replace(f"\x00{i}\x00", TEX[k])
     return s
 
 
@@ -72,6 +79,24 @@ def condensed(df: pd.DataFrame) -> pd.DataFrame:
     c5 = ok[ok.case == "5"]
     rows.append({"case": "5", "what": f"Route B vs Route A, {len(c5)} systems", "metric": "rel. dev %",
                  "N": len(c5), "mean": c5["mean"].mean(), "max": c5["max"].max()})
+    c6 = ok[ok.case == "6"]
+    for _, r in c6[c6.quantity.str.contains("bubble temperature")].iterrows():
+        rows.append({"case": "6", "what": f"{r.system}: {r.quantity}", "metric": r.metric, "N": r.N,
+                     "mean": r["mean"], "max": r["max"]})
+    for tag, label in (("ideal gas (no residual)", "4 vapours, cp at 0.5-10 MPa, ideal gas"),
+                       ("from PR", "4 vapours, cp at 0.5-10 MPa, ideal gas + Peng-Robinson C_p^R"),
+                       ("from virial", "4 vapours, cp at 0.5-10 MPa, ideal gas + virial C_p^R")):
+        c = c6[c6.quantity.str.contains(tag, regex=False)]
+        rows.append({"case": "6", "what": label, "metric": "AARD %", "N": c.N.sum(),
+                     "mean": (c["mean"] * c.N).sum() / c.N.sum(), "max": c["max"].max()})
+    for kind in ("vdW", "RK", "SRK", "PR"):
+        c = c6[c6.quantity.str.contains(f"from the {kind} equation", regex=False)]
+        rows.append({"case": "6", "what": f"5 fluids, vapour pressure 0.55-0.95 T_c, {kind} equation",
+                     "metric": "AARD %", "N": c.N.sum(), "mean": (c["mean"] * c.N).sum() / c.N.sum(),
+                     "max": c["max"].max()})
+    c = c6[c6.quantity.str.contains("boiling range")]
+    rows.append({"case": "6", "what": "energy conservation through the boiling range of water + ethanol",
+                 "metric": "rel. dev %", "N": len(c), "mean": c["mean"].mean(), "max": c["max"].max()})
     return pd.DataFrame(rows)
 
 
@@ -88,7 +113,7 @@ def write_tex(df: pd.DataFrame, path, what_col: str) -> None:
 def main(save: bool = True) -> pd.DataFrame:
     rows = []
     for mod in (case1_pure_components, case2_liquid_solutions, case2b_crossvalidation, case3_nanofluid,
-                case4_phase_change, case5_route_consistency):
+                case4_phase_change, case5_route_consistency, case6_vle_real_gas):
         print(f"Running {mod.__name__} ...")
         rows += mod.run(save=save)
     df = pd.DataFrame(rows)

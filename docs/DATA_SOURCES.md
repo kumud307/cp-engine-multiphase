@@ -21,6 +21,12 @@ Last updated: 2 November 2026.
 | n-Octadecane T_m and ΔH_fus | NIST WebBook (Messerly 1967) | Confirmed by 300.95–301.6 K and 61.34–61.65 kJ/mol in five later papers (ThermoML) |
 | Ideal-gas Cp (DIPPR 107) of ethanol, methanol, acetone, n-hexane, toluene | Perry's Table 2-156 | Compared with NIST recommended ideal-gas Cp, 200–1000 K: max deviation 1.25 % |
 | Vapour pressure (Antoine) of ethanol and toluene | NIST WebBook Antoine parameters | Reproduce the boiling points measured by Chen et al. 2012 within 0.7 % in pressure |
+| Vapour pressure (Antoine) of water, methanol, n-hexane (+ toluene 380–425 K) | Fitted (`tools/fit_vapour_pressure.py`) to the NIST SRD 69 saturation tables | Max deviation 0.003–0.8 % per range |
+| Vapour pressure of acetone | NIST WebBook Antoine set (Ambrose, Sprake & Townsend 1974), 259–508 K | Taken directly from NIST |
+| Critical T, P, V of water, methanol, n-hexane, toluene, n-dodecane | Critical point of the NIST SRD 69 reference equations of state | Exact (e.g. water 647.096 K, 22.064 MPa) |
+| Critical T, P of ethanol | Measured: doi:10.1016/j.fluid.2018.04.021 (514.0 K, 6.141 MPa) | doi:10.1016/j.jct.2013.03.002 gives 514.2 K, 6.135 MPa |
+| Critical T, P of acetone | NIST WebBook average (508 ± 2 K, 48 ± 4 bar) | **verify** (no measurement in the archive) |
+| Acentric factor ω (7 liquids) | Computed from its definition, ω = −1 − log₁₀(P_sat/P_c) at T_r = 0.7, with the NIST saturation data / Antoine equations | Agree with standard tables (water 0.344, ethanol 0.643) |
 | Solid Cp of Al₂O₃, CuO, SiO₂ (quartz), NaCl (Shomate) | NIST WebBook (NIST-JANAF) | Every coefficient compared digit by digit with the NIST pages. The CuO range was corrected to 298–2000 K |
 | Ice: Cp(T), ρ, α, κ_T | **IAPWS R10-06(2009)** (Feistel & Wagner 2006), primary standard | Equation implemented in `tools/iapws_ice.py`; reproduces the release's Table 6 test values to 9 digits. Replaced the earlier Fukusako correlation, which was 1.4 % low at 0 °C |
 | Water density (Kell 1975 equation) | Kell, J. Chem. Eng. Data 1975 | 997.05 kg/m³ at 25 °C, matching NIST |
@@ -62,6 +68,9 @@ small effect on the main results; that file explains why for each one.
 | `thermoml_gamma_inf.csv` | Activity coefficients at infinite dilution in water (ethanol, acetone, toluene) | **Extracted** (Straver & de Loos 2005; Atik et al. 2004) |
 | `thermoml_lle.csv` | Liquid–liquid equilibrium of methanol + n-hexane and methanol + n-dodecane | **Extracted** (Trejo et al. 2006; Casas et al. 2004) |
 | `nist_ideal_gas_cp.csv` | Ideal-gas Cp of 5 components, 200–1000 K | NIST WebBook gas-phase tables (TRC 1997; Chao 1986; Scott 1974; Draeger 1985) |
+| `nist_sat_<fluid>.csv` (5 fluids) | Saturation curves: T, P_sat, liquid density, liquid and vapour Cp, up to the critical point | **Downloaded** by `tools/fetch_nist_fluid.py` (NIST SRD 69) |
+| `nist_<fluid>_vapour_<P>MPa.csv` (9 isobars) | Superheated-vapour Cp of water (1, 5, 10 MPa), methanol, n-hexane (1, 2 MPa), toluene (1 MPa), n-dodecane (0.5 MPa) | **Downloaded** (NIST SRD 69); real-gas validation, case 6 |
+| `thermoml_vle_water_alcohols.csv` | 502 bubble points (T, x, P) of water + ethanol and water + methanol from 26 papers, 13–101 kPa | **Extracted** by `tools/extract_thermoml_phase_eq.py`; DOI per row. Two papers disagreeing with all others by > 2 K are excluded in case 6 |
 | `water_ethanol_cp_exp.csv` | **Empty template.** Direct Cp of water + ethanol mixtures | No open dataset was found (it is in subscription journals). Partly replaced by the Cpᴱ derived from measured Hᴱ(T) (validation case 2g) |
 
 ### Papers whose data are used (from the ThermoML archive)
@@ -100,6 +109,9 @@ python tools/iapws_ice.py                             # verifies the IAPWS ice e
 python tools/fit_kappa_nist.py                        # kappa_T(T) fits for the pressure correction
 python tools/extract_thermoml_phase_eq.py <folder>    # VLE, gamma_inf and LLE datasets
 python tools/fit_octadecane.py                        # n-octadecane solid Cp and liquid density
+python tools/fetch_nist_fluid.py                      # NIST saturation tables and vapour isobars (needs curl)
+python tools/fit_vapour_pressure.py                   # Antoine equations, critical constants, acentric factors
+python tools/make_uncertainty_table.py                # data/model_uncertainty.json from the validation results
 python tools/fit_nrtl_he.py                           # refits NRTL (H^E, freezing points, VLE + Cp^E) and stores them
 python tools/fit_apparent_cp.py                       # NaCl(aq) apparent molar heat capacity
 python validation/case2b_crossvalidation.py --recompute   # held-out (cross-validation) refits
@@ -132,3 +144,11 @@ python tools/make_data_to_verify.py                   # regenerates docs/DATA_TO
      checks every NRTL pair it uses and warns;
    * adding γ∞ data to the water + ethanol fit was tried and rejected (γ∞ better, Cp^E and freezing points
      worse); the trade-off is reported in validation case 2.
+8. **Equations of state and boiling mixtures (5 Nov 2026, after a second mock review):**
+   * critical constants and acentric factors for 7 liquids from NIST reference-EOS critical points and
+     measured data; ω computed from its definition;
+   * Antoine equations fitted to NIST saturation data so every volatile liquid has a vapour pressure;
+   * 502 bubble points of water + alcohols extracted to validate the new vapour–liquid equilibrium;
+   * NIST superheated-vapour isobars to validate the real-gas residual Cp (Peng–Robinson: 5.3 % vs 12.1 %
+     for the ideal gas);
+   * the worked CO₂ / CO₂ + CH₄ examples of the CL 202 lecture slides are reproduced by the tests.

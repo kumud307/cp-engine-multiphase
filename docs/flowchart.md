@@ -24,17 +24,22 @@
   - Stop when no further rule can be applied
 - Route A: property route (needs temperature and composition)
   - Decide the behaviour of each component: solid, liquid, gas, dissolved, melting, crystallising from solution, boiling
+  - For a liquid mixture with volatile components, find its bubble and dew points at the given pressure: below the bubble point it is liquid, above the dew point it is vapour, in between it boils as a mixture
+  - Warn if immiscible liquids would boil together (their vapour pressures add up to the pressure)
   - Group the liquids into liquid phases (miscible liquids together, immiscible liquids separate; where a measured coexistence curve is stored, decide from the temperature and composition)
   - Classify the system: ideal mixture, real liquid solution, suspension, emulsion, slurry with phase change
   - Look up the pure-component heat capacities
   - Correct the pure-component heat capacities from atmospheric pressure to the given pressure
   - Add the excess heat capacity for each real liquid solution, using interaction parameters fitted to measured heats of mixing (or to vapour–liquid equilibrium and excess heat capacity)
   - Check that the interaction parameters do not predict a false split into two liquids at this temperature; warn if they do
-  - Find how much of each component is solid, liquid or dissolved at each temperature from phase equilibrium
+  - Find how much of each component is solid, liquid, dissolved or vapour at each temperature from phase equilibrium
+  - For gases, add the real-gas correction to the heat capacity from an equation of state (Peng–Robinson by default)
   - For dissolved salts, use the measured heat capacity of the salt in solution instead of the solid value
   - Add the latent contribution of any material that changes phase
   - Weight the phases by mass
   - Report the heat capacity at a temperature, or the mean over an interval
+  - Report the partial molar heat capacity of each component of a liquid solution and the mixing functions
+  - Estimate the expected deviation of the result from measurements, from the validation results
 - Route B: calorimetric route (needs heat or work, temperature change and amount)
   - Apply the first law for the stated process (constant pressure, constant volume, adiabatic)
   - Obtain the enthalpy change or the internal energy change

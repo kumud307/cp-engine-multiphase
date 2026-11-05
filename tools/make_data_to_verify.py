@@ -19,7 +19,7 @@ def category(item: str) -> str:
         return "A"
     if ".alpha[" in item or ".kappa_T[" in item:
         return "B"
-    if ".cp[gas]" in item or ".Tb " in item or ".dHvap" in item:
+    if ".cp[gas]" in item or ".Tb " in item or ".dHvap" in item or ".critical" in item:
         return "C"
     if item.startswith(("Al2O3.dHfus", "SiO2.", "NaCl.dHfus")):
         return "D"
@@ -28,15 +28,16 @@ def category(item: str) -> str:
 
 TITLES = {
     "A": ("Can change a Cp result directly",
-          "Check these first. n-Octadecane solid Cp is taken as constant (pre-melting is ignored); the "
-          "acetone–water NRTL set is VLE-fitted only (there are no Hᴱ data for it in the archive); the "
-          "miscibility flags decide whether a pair forms one liquid phase or two."),
+          "Check these first. The miscibility flags decide whether a pair forms one liquid phase or two "
+          "(with ideal mixing in each phase the Cp is the same either way; the flag matters for the "
+          "excess part and for boiling)."),
     "B": ("Only affect Cp − Cv (Route C via Cv) and the Cv estimate",
           "Cp − Cv = Tvα²/κ_T. For solids this is below 1 % of Cp (e.g. Al₂O₃: 5 J/(kg K) of 773), so even a "
           "50 % error in α or κ_T changes Cp by under 1 %. For liquids it is 1–10 % of Cp, so a "
           "κ_T error matters only when Cp is computed from a measured Cv."),
     "C": ("Only used near or above the boiling point (vapour phase)",
-          "Not used in any demonstrated case (all are below the normal boiling points)."),
+          "Enthalpy of the vapour (T_b, ΔH_vap), ideal-gas Cp, and the critical constants used for the "
+          "real-gas residual Cp. No effect on liquid, solid or slurry results."),
     "D": ("Only used for melting of oxides or salts (above 1000 K)", "Never reached in this project."),
     "E": ("Only used to convert volume fractions to masses", "No effect when the composition is given as mass or mole fractions."),
 }
@@ -63,6 +64,8 @@ Full provenance of every dataset: `docs/DATA_SOURCES.md`.
 - Acetone–water NRTL: tested against measured γ∞ (25 % low, right T trend); predicts a spurious phase split above ≈ 360 K, which the engine now detects and warns about.
 - Methanol + n-hexane: replaced the "partially miscible" flag by the measured coexistence curve (Trejo 2006). Methanol + n-dodecane immiscibility confirmed (Casás 2004).
 - Ethanol + toluene: NRTL fitted to measured VLE (Chen 2012) and Cpᴱ (Vega-Maza 2011); NIST Antoine vapour pressures added.
+- Vapour pressures of water, methanol, n-hexane: Antoine equations fitted to NIST SRD 69 saturation tables (≤ 0.8 %); acetone: NIST Antoine set.
+- Critical constants and ω: NIST reference-EOS critical points (5 fluids), measured values for ethanol; ω from its definition. Acetone's T_c, P_c are NIST averages (flagged below).
 
 **Corrected during verification:** acetone–water NRTL orientation (i/j swapped), glycerol Cp (4 % high),
 ice Cp (1.4 % low), CuO valid range, solid densities, NaCl solubility table.

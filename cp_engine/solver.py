@@ -34,6 +34,8 @@ from .validator import validate
 
 DEFAULT_TOLERANCE = 0.02     # relative tolerance for consistency checks
 MEASURED_ORDER = ("dH", "Cv", "gamma", "dS")
+# measured quantities that must never be silently ignored (W is defaulted to 0 when Q is given)
+MEASURED_SYMBOLS = {"Q", "dH", "dU", "dS", "Cv_mass", "Cv_molar", "Cv_total", "gamma"}
 
 
 @dataclass
@@ -98,6 +100,7 @@ class CpResult:
     errors: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
     knowledge: dict[str, Any] = field(default_factory=dict)
+    uncertainty: dict[str, Any] | None = None   # validation-based estimate (cp_engine/uncertainty.py)
 
     # ------------------------------------------------------------------
     def routes_table(self) -> pd.DataFrame:
@@ -135,7 +138,7 @@ class CpResult:
             "breakdown_molar": self.breakdown.per_mole() if self.breakdown else None,
             "classification": self.classification, "cv_mass": self.cv_mass,
             "warnings": self.warnings, "assumptions": self.assumptions, "notes": self.notes,
-            "errors": self.errors, "missing": self.missing,
+            "errors": self.errors, "missing": self.missing, "uncertainty": self.uncertainty,
         }
 
     def __str__(self) -> str:
@@ -147,6 +150,10 @@ class CpResult:
             out.append(f"Cp (molar basis) = {self.cp_molar:,.4f} J/(mol K)" if self.cp_molar is not None
                        else "Cp (molar basis) = n/a (needs composition or moles)")
             out.append(f"Recommended route: {self.recommended}")
+            if self.uncertainty:
+                u = self.uncertainty
+                out.append(f"Expected deviation from measurements: ± {u['relative_percent']:.1f} % "
+                           f"(± {u['absolute_J_per_kgK']:,.0f} J/(kg K); validation-based, see result.uncertainty)")
         else:
             out.append("Cp could NOT be computed.")
         if self.classification:
@@ -314,6 +321,28 @@ class Solver:
         return CP_TAGS.get(tag, tag)
 
     # ------------------------------------------------------------------
+    def unused_inputs(self) -> list[str]:
+        """Warnings for measured quantities the user gave but no fired rule used (never silently ignored)."""
+        used = {i for r in self.rules if r.name in self.fired for i in r.inputs}
+        out = []
+        for sym, fact in self.kb.items():
+            if fact.source != "input" or sym in used or sym not in MEASURED_SYMBOLS:
+                continue
+            options = []
+            for r in self.rules:
+                if sym in r.inputs:
+                    miss = [i for i in r.inputs if i not in self.kb]
+                    if miss:
+                        options.append((len(miss), " + ".join(SYMBOLS.get(m, (m,))[0] for m in miss), r.equation))
+            desc = SYMBOLS.get(sym, (sym,))[0]
+            if options:
+                fewest = min(o[0] for o in options)
+                alts = sorted({f"{need} ({eq})" for n, need, eq in options if n == fewest})
+                out.append(f"{desc} was given but NOT used. To use it also provide: {' or '.join(alts)}.")
+            else:
+                out.append(f"{desc} was given but NOT used by any route.")
+        return out
+
     def missing_suggestions(self, limit: int = 6) -> list[str]:
         """Smallest sets of extra inputs that would complete a route to Cp."""
         producers: dict[str, list[Rule]] = {}
@@ -484,6 +513,12 @@ class CpEngine:
             else:
                 res.recommended += " (measured data take precedence over the model prediction)"
             res.breakdown = s.ctx.breakdowns.get("A:mean") or s.ctx.breakdowns.get("A:point")
+            if res.breakdown is not None and "system" in kb and best.tag.startswith("A"):
+                from .uncertainty import estimate
+                try:
+                    res.uncertainty = estimate(kb["system"].value, res.breakdown)
+                except Exception as exc:          # an estimate must never break a result
+                    log.note(f"Uncertainty estimate unavailable ({exc}).")
             # discrepancies: compare each measured route with the model (like with like)
             by_tag = {r.tag: r for r in res.routes}
             for r in res.routes:
@@ -519,6 +554,8 @@ class CpEngine:
             res.missing = s.missing_suggestions()
             if not res.missing:
                 res.missing = ["No combination of additional inputs found; check the composition and data."]
+        for msg in s.unused_inputs():
+            log.warn(msg)
         for rule, msg in s.failures:
             (res.errors if not res.success else res.warnings).append(f"Rule '{rule}' could not be applied: {msg}")
         res.warnings += log.warnings

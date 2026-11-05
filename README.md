@@ -6,12 +6,16 @@ Give the engine **any valid combination** of what you know: temperature(s), pres
 (mole / mass / volume fractions, moles, masses, solid volume fraction φ), process type, heat Q,
 work W, ΔH, ΔU, ΔS, Cv, γ. It uses thermodynamic relations to reach **one output: the specific
 heat capacity Cp of the system** (mass and molar basis), for any number of components, including
-real solutions, suspensions/nanofluids, emulsions and slurries with phase change.
+real solutions, suspensions/nanofluids, emulsions, slurries with phase change, boiling mixtures
+(vapour–liquid equilibrium) and real gases at pressure (virial and cubic equations of state).
 
 Every result reports:
 - the Cp on a mass basis, J/(kg K), and a molar basis, J/(mol K)
 - the route(s) used and the chain of equations behind each
-- a breakdown into ideal, excess (Cpᴱ) and latent/apparent contributions
+- a breakdown into ideal, excess (Cpᴱ, and the real-gas residual Cpᴿ) and latent/apparent contributions
+- an expected deviation from measurements (± %), built from the project's own validation
+- for liquid solutions: partial molar Cp of each component and the mixing functions ΔG, ΔH, ΔS
+- for boiling mixtures: bubble and dew points, vapour fraction and compositions
 - warnings and assumptions
 - if Cp cannot be reached, which extra inputs would complete a route
 
@@ -92,6 +96,9 @@ engine.solve({"T": "25 C", "components": ["water"], "pure_cp": {"water": "4.18 k
 | `sle_activity` | `auto` (default: NRTL γ when the parameter set was fitted to freezing points, so one liquid model gives Hᴱ and the ice equilibrium), `ideal` (γ = 1; 0.84 K on freezing points) or `nrtl` |
 | `sle_dcp` | include the ΔCp (Kirchhoff) term in the solid–liquid equilibrium equation (default `True`) |
 | `nrtl_parameters` | `HE` (default; NRTL refitted to measured excess enthalpies, and for water + ethanol also to freezing points) or `VLE` |
+| `vle_parameters` | NRTL set for boiling of mixtures: `VLE` (default; bubble points 0.3–0.5 K) or `HE` |
+| `vapour_model` | `ideal` (default, modified Raoult's law) or `lewis_randall` (virial fugacity coefficients) |
+| `gas_eos` | residual Cp of gases: `PR` (default), `SRK`, `RK`, `vdW`, `virial` or `ideal` |
 | `custom_components` | `{name: {MW, cp, [phase, density, alpha, kappa_T, Tm, dHfus, Tb, dHvap, miscibility_class]}}`, for one calculation |
 | `pure_cp` | `{name: Cp}` or `{name: {phase: Cp}}`, overrides the database value for one calculation |
 | `liquid_phases` | force the grouping of liquids into phases, e.g. `{"aqueous": ["water", "ethanol"], "organic": ["toluene"]}` |
@@ -130,17 +137,20 @@ miscibility flags and solubility tables. Then run `python tools/make_data_to_ver
 
 ```
 cp_engine/          units, database, inputs (normaliser), validator, rules, solver, system (Route A),
-  models/           pure, ideal, nrtl, heterogeneous, phase_change, cv_cp
+  models/           pure, ideal, nrtl, heterogeneous, phase_change, cv_cp,
+                    eos (virial + cubic), vle (bubble/dew/flash), partial_molar (Gibbs–Duhem)
+  uncertainty.py    expected deviation of each result from the validation table
   plotting.py, interactive.py
-data/               components.json, binary_nrtl.json
-validation/         case1 … case5 scripts, run_all.py, data/ (NIST, ThermoML, nanofluid and freezing-point data), results/
-tests/              pytest suite (147 tests, incl. regression tests against literature data)
+data/               components.json, binary_nrtl.json, model_uncertainty.json
+validation/         case1 … case6 scripts, run_all.py, data/ (NIST, ThermoML, nanofluid and freezing-point data), results/
+tests/              pytest suite (185 tests, incl. regression tests against literature data)
 notebooks/          CP_Engine_Demo.ipynb (+ build_notebook.py that generates it)
 docs/               TEAM_HANDBOOK.md (start here: demo script + defence Q&A), DATA_SOURCES.md, DATA_TO_VERIFY.md,
                     flowchart.md (professor format), flowchart_detailed.md, WORK_BREAKDOWN.md
 manuscript/         main.tex (achemso, JCED two-column), references.bib
 figures/            all figures (PNG + PDF, 300 dpi)
-tools/              extract_thermoml.py, digitize_ohanley2012.py, iapws_ice.py, fit_nrtl_he.py,
+tools/              extract_thermoml.py, extract_thermoml_phase_eq.py, fetch_nist_fluid.py, fit_vapour_pressure.py,
+                    make_uncertainty_table.py, digitize_ohanley2012.py, iapws_ice.py, fit_nrtl_he.py, fit_octadecane.py,
                     make_colab_zip.py, make_data_to_verify.py, apply_verified_data_2026_11_02.py
 ```
 
@@ -165,6 +175,10 @@ are published measurements; `docs/DATA_SOURCES.md` documents where each came fro
 | 3 | 69 nanofluid DSC points, Al₂O₃ / CuO / SiO₂ (O'Hanley et al. 2012) | **Model II = Route A 2.1 %**, Model I 18.5 % |
 | 4 | Freezing points of aqueous ethanol ≤ 30 wt% (Lange 1967) | consistent NRTL 1.7 K (fit), **2.5 K held-out**; ideal + ΔCp 0.84 K |
 | 5 | Route A → Q → Route B, 7 systems | agree to < 10⁻⁶ % |
+| 6 | Bubble points of water + ethanol / methanol, 409 points from 24 papers (ThermoML) | **0.26 K / 0.46 K** |
+| 6 | Vapour Cp at 0.5–10 MPa, 4 fluids (NIST SRD 69, 189 points) | ideal gas 12.1 % → **Peng–Robinson residual 5.3 %** |
+| 6 | Vapour pressure from vdW / RK / SRK / PR, 5 fluids | 224 / 58 / 2.3 / 1.4 % |
+| – | CO₂ and CO₂ + CH₄ worked examples of the CL 202 lectures | reproduced to within ±0.01 of the printed values (rounding) (tests) |
 
 The only dataset still missing is a direct Cp measurement of water + ethanol mixtures (behind a paywall).
 The template `validation/data/water_ethanol_cp_exp.csv` is read automatically once filled in.
@@ -173,8 +187,8 @@ The template `validation/data/water_ethanol_cp_exp.csv` is read automatically on
 
 - Ideal volume of mixing (Vᴱ = 0) for densities, α and κ_T of mixtures; interfacial enthalpy of particles is neglected.
 - Cpᴱ only for pairs with NRTL parameters. Pairs without them are treated as ideal, with a warning. For water + ethanol and water + methanol the engine uses parameters refitted to measured Hᴱ (`tools/fit_nrtl_he.py`); VLE-fitted sets underpredict Cpᴱ six-fold or more. Ethanol + toluene is fitted jointly to VLE and Cpᴱ. The Cp-optimised water + ethanol set describes γ∞ less well than the VLE set (35 % vs 12 %); adding γ∞ to the fit worsened held-out Cpᴱ, so the trade-off is reported rather than hidden.
-- Partitioning of a solute between immiscible liquid phases (emulsions) and VLE flash of mixtures are not modelled; the engine warns. Miscibility follows a measured coexistence curve where one is stored (methanol + n-hexane, UCST 314.9 K), otherwise a fixed flag.
+- Boiling of a miscible liquid mixture is computed (γ–φ VLE with NRTL γ and Antoine P_sat; ideal vapour by default). Three-phase boiling of immiscible liquids and solute partitioning between liquid phases are not modelled; the engine warns. Miscibility follows a measured coexistence curve where one is stored (methanol + n-hexane, UCST 314.9 K), otherwise a fixed flag.
 - Every NRTL pair in use is checked for a spurious liquid–liquid split at the working temperature (the literature acetone + water set fails above ≈ 360 K; the engine warns).
 - Dissolved NaCl uses an apparent molar heat capacity fitted at 298 K (warning elsewhere); other dissolved solids use the Neumann–Kopp approximation (solid-state Cp).
-- Pressure: liquid and solid Cp are corrected from 1 atm with the Tait equation (validated to 100 MPa for 5 liquids; other components use a constant κ_T).
+- Pressure: liquid and solid Cp are corrected from 1 atm with the Tait equation (validated to 100 MPa for 5 liquids; other components use a constant κ_T). Gases: ideal-gas Cp + residual Cpᴿ from the Peng–Robinson equation (5 % average error vs NIST at 0.5–10 MPa, larger within ~20 K of saturation).
 - Pure-component melting is smoothed over a finite, user-adjustable width. Point values inside the step depend on it (the engine warns); the latent heat and any interval-mean Cp spanning the transition do not.

@@ -20,6 +20,8 @@ Full provenance of every dataset: `docs/DATA_SOURCES.md`.
 - Acetone–water NRTL: tested against measured γ∞ (25 % low, right T trend); predicts a spurious phase split above ≈ 360 K, which the engine now detects and warns about.
 - Methanol + n-hexane: replaced the "partially miscible" flag by the measured coexistence curve (Trejo 2006). Methanol + n-dodecane immiscibility confirmed (Casás 2004).
 - Ethanol + toluene: NRTL fitted to measured VLE (Chen 2012) and Cpᴱ (Vega-Maza 2011); NIST Antoine vapour pressures added.
+- Vapour pressures of water, methanol, n-hexane: Antoine equations fitted to NIST SRD 69 saturation tables (≤ 0.8 %); acetone: NIST Antoine set.
+- Critical constants and ω: NIST reference-EOS critical points (5 fluids), measured values for ethanol; ω from its definition. Acetone's T_c, P_c are NIST averages (flagged below).
 
 **Corrected during verification:** acetone–water NRTL orientation (i/j swapped), glycerol Cp (4 % high),
 ice Cp (1.4 % low), CuO valid range, solid densities, NaCl solubility table.
@@ -28,12 +30,12 @@ ice Cp (1.4 % low), CuO valid range, solid densities, NaCl solubility table.
 mixture data (Hᴱ, Cp, VLE, γ∞, LLE), NIST ideal-gas Cp, O'Hanley et al. 2012 nanofluid DSC data,
 Lange's freezing points.
 
-## Still open (27 flagged values)
+## Still open (28 flagged values)
 
 
 ### A. Can change a Cp result directly (2)
 
-Check these first. n-Octadecane solid Cp is taken as constant (pre-melting is ignored); the acetone–water NRTL set is VLE-fitted only (there are no Hᴱ data for it in the archive); the miscibility flags decide whether a pair forms one liquid phase or two.
+Check these first. The miscibility flags decide whether a pair forms one liquid phase or two (with ideal mixing in each phase the Cp is the same either way; the flag matters for the excess part and for boiling).
 
 - [ ] `binary.miscibility[methanol-n-octadecane]  (Partially miscible; treated as immiscible)`
 - [ ] `binary.miscibility[ethanol-n-hexane]  (Solvent miscibility tables)`
@@ -56,12 +58,13 @@ Cp − Cv = Tvα²/κ_T. For solids this is below 1 % of Cp (e.g. Al₂O₃: 5 J
 - [ ] `NaCl.alpha[solid] = 0.00012 1/K  (~3 x 40e-6 1/K linear expansivity (approx.))`
 - [ ] `NaCl.kappa_T[solid] = 4.2e-11 1/Pa  (1/bulk modulus (~24 GPa) (approx.))`
 
-### C. Only used near or above the boiling point (vapour phase) (5)
+### C. Only used near or above the boiling point (vapour phase) (6)
 
-Not used in any demonstrated case (all are below the normal boiling points).
+Enthalpy of the vapour (T_b, ΔH_vap), ideal-gas Cp, and the critical constants used for the real-gas residual Cp. No effect on liquid, solid or slurry results.
 
 - [ ] `glycerol.Tb = 563.0 K  (CRC Handbook (decomposes); NIST average 550 +- 40 K)`
 - [ ] `glycerol.dHvap = 78.5 kJ/mol  (NIST WebBook, Stephenson & Malanowski (1987), at 484 K (not at Tb))`
+- [ ] `acetone.critical = Tc 508.0 K, Pc 4800000.0 Pa  (NIST WebBook average of measured values (508 ± 2 K, 48 ± 4 bar); ω from the NIST Antoine equation at 0.7 T_c)`
 - [ ] `n-dodecane.Tb = 489.5 K  (NIST WebBook / CRC Handbook)`
 - [ ] `n-dodecane.dHvap = 44.1 kJ/mol  (Approximate value at Tb (not found on NIST page; NIST gives 61.4 kJ/mol at 299 K))`
 - [ ] `n-octadecane.dHvap = 64.8 kJ/mol  (NIST WebBook, Stephenson & Malanowski (1987), at 516 K (not at Tb))`

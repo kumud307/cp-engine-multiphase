@@ -34,7 +34,7 @@ case,system,quantity,metric,N,mean,max,reference,status
 2,methanol + water,"Cp, NRTL refitted to H^E",AARD %,12,2.7072288185521667,7.5408264292561835,doi:10.1016/j.jct.2006.11.001,ok
 2,ethanol + toluene,"Cp, NRTL fitted to VLE + Cp^E (fit quality; held-out in case 2b)",AARD %,11,1.2865353401461563,3.14028834968043,doi:10.1016/j.jct.2011.06.019,ok
 2,ethanol + toluene,"Cp, ideal mixture (for comparison)",AARD %,11,8.328057493652954,12.274457175028527,doi:10.1016/j.jct.2011.06.019,ok
-2,ethanol + toluene,VLE bubble temperature (fit quality),|ΔT| K,60,0.6254592080963571,2.5647930231850182,doi:10.1021/je200921u,ok
+2,ethanol + toluene,VLE bubble temperature (fit quality),|ΔT| K,60,0.6259475376471594,2.5647930231850182,doi:10.1021/je200921u,ok
 2,ethanol in water,"activity coefficient at infinite dilution, Cp-optimised set (H^E+SLE)",AARD %,6,34.97715255625476,42.480761353974586,doi:10.1021/je0495942; doi:10.1021/je049875+,ok
 2,ethanol in water,"activity coefficient at infinite dilution, VLE set",AARD %,6,11.760127503334266,20.877576572583724,doi:10.1021/je0495942; doi:10.1021/je049875+,ok
 2,acetone in water,"activity coefficient at infinite dilution, VLE set (literature)",AARD %,11,24.57510279215335,26.44889476206524,doi:10.1021/je0495942; doi:10.1021/je049875+,ok
@@ -82,3 +82,61 @@ case,system,quantity,metric,N,mean,max,reference,status
 5,water–toluene–ethanol emulsion + SiO2,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,2.1999678696206103e-07,2.1999678696206103e-07,self-consistency,ok
 5,ice slurry 10 wt% ethanol,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
 5,PCM slurry 20 wt% n-octadecane,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
+6,ethanol + water,"bubble temperature 13-101 kPa, NRTL VLE set (engine default for phase equilibrium)",|ΔT| K,256,0.25666217043511863,3.1671734852365034,"16 papers, NIST ThermoML",ok
+6,ethanol + water,"bubble temperature 13-101 kPa, NRTL H^E-fitted set (caloric set, for comparison)",|ΔT| K,256,4.467309162876202,9.176827748053029,"16 papers, NIST ThermoML",ok
+6,methanol + water,"bubble temperature 13-101 kPa, NRTL VLE set (engine default for phase equilibrium)",|ΔT| K,153,0.4647541137415268,1.9236632300093675,"8 papers, NIST ThermoML",ok
+6,methanol + water,"bubble temperature 13-101 kPa, NRTL H^E-fitted set (caloric set, for comparison)",|ΔT| K,153,68.24872515164385,180.99544858404101,"8 papers, NIST ThermoML",ok
+6,"water vapour, 10 MPa","cp 590-900 K, ideal gas (no residual)",AARD %,32,26.15690667078475,67.2227536350793,NIST SRD 69,ok
+6,"water vapour, 10 MPa","cp 590-900 K, ideal gas + C_p^R from PR",AARD %,32,9.900320051006902,44.423839893530584,NIST SRD 69,ok
+6,"water vapour, 10 MPa","cp 590-900 K, ideal gas + C_p^R from SRK",AARD %,32,9.708059039900402,44.18643029042736,NIST SRD 69,ok
+6,"water vapour, 10 MPa","cp 590-900 K, ideal gas + C_p^R from virial",AARD %,32,12.144506771355422,52.48159185356053,NIST SRD 69,ok
+6,"water vapour, 1 MPa","cp 460-900 K, ideal gas (no residual)",AARD %,45,5.41903825140605,24.88653183508275,NIST SRD 69,ok
+6,"water vapour, 1 MPa","cp 460-900 K, ideal gas + C_p^R from PR",AARD %,45,3.2578453964513163,20.707202407363017,NIST SRD 69,ok
+6,"water vapour, 1 MPa","cp 460-900 K, ideal gas + C_p^R from SRK",AARD %,45,3.204108665371642,20.569812998472898,NIST SRD 69,ok
+6,"water vapour, 1 MPa","cp 460-900 K, ideal gas + C_p^R from virial",AARD %,45,1.968707246557145,15.217643127393135,NIST SRD 69,ok
+6,"water vapour, 5 MPa","cp 540-900 K, ideal gas (no residual)",AARD %,37,16.776492428427115,53.20172246740634,NIST SRD 69,ok
+6,"water vapour, 5 MPa","cp 540-900 K, ideal gas + C_p^R from PR",AARD %,37,7.938496027374474,40.166927655372106,NIST SRD 69,ok
+6,"water vapour, 5 MPa","cp 540-900 K, ideal gas + C_p^R from SRK",AARD %,37,7.782022591553463,39.87286205463907,NIST SRD 69,ok
+6,"water vapour, 5 MPa","cp 540-900 K, ideal gas + C_p^R from virial",AARD %,37,6.980425395305881,38.06050040033209,NIST SRD 69,ok
+6,"methanol vapour, 1 MPa","cp 470-620 K, ideal gas (no residual)",AARD %,16,8.728893345045078,17.891672558643997,NIST SRD 69,ok
+6,"methanol vapour, 1 MPa","cp 470-620 K, ideal gas + C_p^R from PR",AARD %,16,4.960034262756803,12.427856607939407,NIST SRD 69,ok
+6,"methanol vapour, 1 MPa","cp 470-620 K, ideal gas + C_p^R from SRK",AARD %,16,4.859538783519623,12.261323409792539,NIST SRD 69,ok
+6,"methanol vapour, 1 MPa","cp 470-620 K, ideal gas + C_p^R from virial",AARD %,16,3.84620452975848,9.774558230111888,NIST SRD 69,ok
+6,"methanol vapour, 2 MPa","cp 510-620 K, ideal gas (no residual)",AARD %,12,13.664756643329184,22.591008361037964,NIST SRD 69,ok
+6,"methanol vapour, 2 MPa","cp 510-620 K, ideal gas + C_p^R from PR",AARD %,12,6.906329231146697,13.707983071402374,NIST SRD 69,ok
+6,"methanol vapour, 2 MPa","cp 510-620 K, ideal gas + C_p^R from SRK",AARD %,12,6.7543514058817244,13.488618928995527,NIST SRD 69,ok
+6,"methanol vapour, 2 MPa","cp 510-620 K, ideal gas + C_p^R from virial",AARD %,12,6.169083369699989,12.208936447321891,NIST SRD 69,ok
+6,"n-hexane vapour, 1 MPa","cp 450-600 K, ideal gas (no residual)",AARD %,16,4.94421487324302,10.668411926822543,NIST SRD 69,ok
+6,"n-hexane vapour, 1 MPa","cp 450-600 K, ideal gas + C_p^R from PR",AARD %,16,1.654126199546208,4.574270207987612,NIST SRD 69,ok
+6,"n-hexane vapour, 1 MPa","cp 450-600 K, ideal gas + C_p^R from SRK",AARD %,16,1.6015144800206194,4.471521554203064,NIST SRD 69,ok
+6,"n-hexane vapour, 1 MPa","cp 450-600 K, ideal gas + C_p^R from virial",AARD %,16,1.7373491115906992,5.187232929991573,NIST SRD 69,ok
+6,"n-hexane vapour, 2 MPa","cp 490-600 K, ideal gas (no residual)",AARD %,12,10.236458579868643,22.57129091870007,NIST SRD 69,ok
+6,"n-hexane vapour, 2 MPa","cp 490-600 K, ideal gas + C_p^R from PR",AARD %,12,2.3352184154042983,7.062867874751419,NIST SRD 69,ok
+6,"n-hexane vapour, 2 MPa","cp 490-600 K, ideal gas + C_p^R from SRK",AARD %,12,2.279121294970559,7.038190205571547,NIST SRD 69,ok
+6,"n-hexane vapour, 2 MPa","cp 490-600 K, ideal gas + C_p^R from virial",AARD %,12,5.341447647253332,16.104161315721335,NIST SRD 69,ok
+6,"toluene vapour, 1 MPa","cp 520-700 K, ideal gas (no residual)",AARD %,19,3.8797714080204186,7.503499135410362,NIST SRD 69,ok
+6,"toluene vapour, 1 MPa","cp 520-700 K, ideal gas + C_p^R from PR",AARD %,19,1.4604349828869392,3.291605824106319,NIST SRD 69,ok
+6,"toluene vapour, 1 MPa","cp 520-700 K, ideal gas + C_p^R from SRK",AARD %,19,1.4160994475435118,3.2048736319467155,NIST SRD 69,ok
+6,"toluene vapour, 1 MPa","cp 520-700 K, ideal gas + C_p^R from virial",AARD %,19,1.2238910821716822,2.8334033501404408,NIST SRD 69,ok
+6,water,vapour pressure 0.55-0.95 T_c from the vdW equation (φ_L = φ_V),AARD %,21,171.96443311941962,1680.672244660238,NIST SRD 69,ok
+6,water,vapour pressure 0.55-0.95 T_c from the RK equation (φ_L = φ_V),AARD %,21,43.26104576862762,204.98183043618505,NIST SRD 69,ok
+6,water,vapour pressure 0.55-0.95 T_c from the SRK equation (φ_L = φ_V),AARD %,21,2.706635177190333,10.02073952173946,NIST SRD 69,ok
+6,water,vapour pressure 0.55-0.95 T_c from the PR equation (φ_L = φ_V),AARD %,21,1.4772789281080285,5.820034744581156,NIST SRD 69,ok
+6,methanol,vapour pressure 0.55-0.95 T_c from the vdW equation (φ_L = φ_V),AARD %,20,314.3313123463993,3882.628995245194,NIST SRD 69,ok
+6,methanol,vapour pressure 0.55-0.95 T_c from the RK equation (φ_L = φ_V),AARD %,20,89.18624288777805,647.5375216851593,NIST SRD 69,ok
+6,methanol,vapour pressure 0.55-0.95 T_c from the SRK equation (φ_L = φ_V),AARD %,20,3.4987699317351564,17.105262267047976,NIST SRD 69,ok
+6,methanol,vapour pressure 0.55-0.95 T_c from the PR equation (φ_L = φ_V),AARD %,20,2.428796046782651,9.645401006804546,NIST SRD 69,ok
+6,n-hexane,vapour pressure 0.55-0.95 T_c from the vdW equation (φ_L = φ_V),AARD %,21,162.0682678515895,1588.3207056937879,NIST SRD 69,ok
+6,n-hexane,vapour pressure 0.55-0.95 T_c from the RK equation (φ_L = φ_V),AARD %,21,36.59322825557993,173.59762825330952,NIST SRD 69,ok
+6,n-hexane,vapour pressure 0.55-0.95 T_c from the SRK equation (φ_L = φ_V),AARD %,21,1.4909137592117228,2.323460962565689,NIST SRD 69,ok
+6,n-hexane,vapour pressure 0.55-0.95 T_c from the PR equation (φ_L = φ_V),AARD %,21,0.5457398967135662,2.0506502585770408,NIST SRD 69,ok
+6,toluene,vapour pressure 0.55-0.95 T_c from the vdW equation (φ_L = φ_V),AARD %,21,152.17572244958515,1457.986260903449,NIST SRD 69,ok
+6,toluene,vapour pressure 0.55-0.95 T_c from the RK equation (φ_L = φ_V),AARD %,21,31.445749251157302,134.54665997003258,NIST SRD 69,ok
+6,toluene,vapour pressure 0.55-0.95 T_c from the SRK equation (φ_L = φ_V),AARD %,21,1.7264786884843448,2.8093515210677515,NIST SRD 69,ok
+6,toluene,vapour pressure 0.55-0.95 T_c from the PR equation (φ_L = φ_V),AARD %,21,0.713300544892798,1.6395280150145595,NIST SRD 69,ok
+6,n-dodecane,vapour pressure 0.55-0.95 T_c from the vdW equation (φ_L = φ_V),AARD %,20,329.35511631630067,4183.8936133029865,NIST SRD 69,ok
+6,n-dodecane,vapour pressure 0.55-0.95 T_c from the RK equation (φ_L = φ_V),AARD %,20,94.7427877215978,757.9048542443419,NIST SRD 69,ok
+6,n-dodecane,vapour pressure 0.55-0.95 T_c from the SRK equation (φ_L = φ_V),AARD %,20,2.0896087879006715,2.500047026146767,NIST SRD 69,ok
+6,n-dodecane,vapour pressure 0.55-0.95 T_c from the PR equation (φ_L = φ_V),AARD %,20,1.652019250663456,6.505859542091303,NIST SRD 69,ok
+6,ethanol + water x = 0.1,"∫cp_app dT vs ΔH through the boiling range 340-385 K (adaptive quadrature, break points at the bubble and dew points)",rel. dev %,1,0.001364028810546536,0.001364028810546536,internal consistency,ok
+6,ethanol + water x = 0.5,"∫cp_app dT vs ΔH through the boiling range 340-385 K (adaptive quadrature, break points at the bubble and dew points)",rel. dev %,1,0.025274090461502308,0.025274090461502308,internal consistency,ok

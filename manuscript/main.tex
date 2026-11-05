@@ -30,8 +30,9 @@ encoded as rules and evaluated by forward chaining. All routes allowed by the in
 and compared, inconsistent over-specification is detected, and missing information is identified.
 The property route combines pure-component correlations corrected to pressure with the Tait equation,
 NRTL excess heat capacities obtained through the Gibbs--Helmholtz equation, an apparent-molar-heat-capacity
-model for electrolytes, mass-weighted phase averaging, and latent contributions from melting,
-solid--liquid equilibrium and dissolution. Validation uses only published data (735 points: NIST SRD~69,
+model for electrolytes, mass-weighted phase averaging, latent contributions from melting,
+solid--liquid equilibrium, dissolution and vapor--liquid equilibrium of mixtures, and a cubic-equation
+residual heat capacity for gases. Validation uses only published data (more than 1400 points: NIST SRD~69,
 the NIST ThermoML archive, nanofluid calorimetry and freezing-point tables), and every fitted model is
 also tested on held-out data. Pure-liquid heat capacities agree with NIST to 0.33\,\% at 0.1~MPa and to
 0.39\,\% up to 100~MPa. NRTL parameters regressed from vapor--liquid equilibria underpredict the excess
@@ -40,6 +41,8 @@ water + ethanol, jointly to freezing points) reproduce held-out excess enthalpie
 predict the excess heat capacity of water + ethanol from an excluded data source to \SI{3.7}{J.mol^{-1}.K^{-1}},
 and predict independent heat capacities of water + methanol to 2.7\,\%. For 69 nanofluid points the
 thermal-equilibrium (mass-weighted) model gives 2.1\,\% AARD, against 18.5\,\% for the volume-weighted model.
+Bubble temperatures of water + alcohols (409 points) are reproduced to 0.3--0.5~K, and the Peng--Robinson
+residual reduces the error of vapor heat capacities at 0.5--10~MPa from 12.1 to 5.3\,\%.
 }
 
 \begin{document}
@@ -135,6 +138,28 @@ c_{p,\mathrm{app}}=\frac{dH}{dT}=\underbrace{\sum n_i^pC_{p,i}^p}_{\text{ideal}}
 \end{equation}
 and the interval mean is $[H(T_2)-H(T_1)]/[m(T_2-T_1)]$.
 
+\subsection{Boiling mixtures and real gases}
+A miscible liquid mixture that contains volatile components boils between its bubble and dew points, not at
+the boiling points of its components. Equal fugacities in the two phases with the Lewis--Randall reference
+for the liquid and an ideal vapour give the modified Raoult's law,
+\begin{equation}
+y_iP=x_i\gamma_i(T,\mathbf{x})P_i^\mathrm{sat}(T),
+\end{equation}
+with $\gamma_i$ from NRTL and $P_i^\mathrm{sat}$ from Antoine equations fitted to the NIST saturation
+data \cite{NISTFluid}. Bubble and dew points follow from $\sum K_ix_i=1$ and $\sum y_i/K_i=1$
+($K_i=y_i/x_i$); between them an isothermal flash (Rachford--Rice equation \cite{Rachford1952}, iterated on
+$\gamma(\mathbf{x})$) gives the vapour fraction and both compositions at every $T$, so the latent heat of
+partial evaporation enters $c_{p,\mathrm{app}}$ through the phase amounts. Non-volatile components
+($K_i=0$) remain in the liquid.
+
+Gases are described by $C_p=C_p^\mathrm{ig}(T)+C_p^R(T,P,\mathbf{y})$. The residual part comes from the
+Peng--Robinson equation \cite{Peng1976} with one-fluid mixing rules (or, as options, the
+Soave--Redlich--Kwong \cite{Soave1972}, Redlich--Kwong and van der Waals equations, or the virial equation
+with the Pitzer--Abbott second virial coefficient and the Prausnitz combining rules \cite{Smith2018}, for which
+$C_p^R=-TP\,d^2B/dT^2$). Critical constants are those of the NIST reference equations of state (ethanol:
+measured \cite{He2018}); the acentric factor is computed from its definition,
+$\omega=-1-\log_{10}[P^\mathrm{sat}(0.7T_c)/P_c]$.
+
 \subsection{Routes B and C}
 With $Q>0$ for heat added and $W>0$ for work done on the system, the first law gives $\Delta H = Q + W$ at
 constant pressure ($W$ = shaft work) and $\Delta U = Q + W$ at constant volume, so
@@ -150,9 +175,14 @@ data were obtained as follows:
 \item downloaded from NIST SRD~69 \cite{NISTFluid}, including isotherms to 100~MPa;
 \item extracted from the NIST ThermoML archive \cite{ThermoMLArchive}: 1090 binary heat-capacity and excess-enthalpy points (compositions given as mole fraction, mass fraction or molality), 68 isobaric VLE points \cite{Chen2012}, 24 infinite-dilution activity coefficients \cite{Straver2005,Atik2004} and liquid--liquid equilibria \cite{Trejo2006,Casas2004}, each traced to its original paper;
 \item digitised from the vector figures of an open-access calorimetry study \cite{OHanley2012}, reading marker coordinates from the PDF drawing commands;
-\item taken from a handbook table of freezing points \cite{Lange1967}.
+\item taken from a handbook table of freezing points \cite{Lange1967};
+\item NIST saturation tables and superheated-vapour isobars of five fluids \cite{NISTFluid}, and 502 bubble
+points of water + ethanol and water + methanol from 26 papers in the ThermoML archive.
 \end{itemize}
-The software passes 147 automated tests, including regression tests against these data.
+The software passes 185 automated tests, including regression tests against these data and the worked
+equation-of-state examples of the course. Every result carries an expected deviation from measurements,
+obtained by combining (in quadrature) the deviation of each model ingredient in this validation, weighted by
+its share of $C_p$.
 
 \section{Results and Discussion}
 Table~\ref{tab:aard} summarises the validation.
@@ -266,6 +296,36 @@ change to better than 0.01\,\%.
   \label{fig:ice}
 \end{figure}
 
+\subsection{Boiling mixtures and real gases}
+Bubble temperatures of water + ethanol and water + methanol at 13--101~kPa are reproduced to 0.26~K (256
+points, 16 papers) and 0.46~K (153 points, 8 papers) with VLE-regressed NRTL parameters, and the
+minimum-boiling azeotrope of water + ethanol is found at $x_\mathrm{EtOH}=0.90$, 351.3~K
+(Figure~\ref{fig:vle}). Two further papers deviate from all others by more than 2~K on average and were
+excluded. The parameter sets refitted to $H^E$, which give the best excess heat capacities, place the bubble
+points 4.5~K (ethanol) and 68~K (methanol) too high. A single set fitted to $H^E$, freezing points and
+bubble points together doubled the heat-capacity error of water + methanol (2.7 to 5.3\,\%), so caloric
+properties and the phase split use the set regressed to each kind of data. Through the boiling range the
+integral of $c_{p,\mathrm{app}}$ equals $\Delta H$ to 0.03\,\%.
+
+For vapours at 0.5--10~MPa (189 NIST points for water, methanol, $n$-hexane and toluene) the ideal-gas heat
+capacity deviates by 12.1\,\% on average; adding the Peng--Robinson residual reduces this to 5.3\,\%
+(Figure~\ref{fig:steam}). The largest deviations remain within about 20~K of saturation, where cubic
+equations are least reliable. Vapour pressures obtained from the equations themselves illustrate the role of
+the temperature-dependent attraction term: 224\,\% (van der Waals) and 58\,\% (Redlich--Kwong) average
+deviation, against 2.3\,\% (Soave--Redlich--Kwong) and 1.4\,\% (Peng--Robinson).
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{fig_vle_water_ethanol}
+  \caption{Water + ethanol at 101.3~kPa: measured bubble points and the bubble and dew curves of the engine.}
+  \label{fig:vle}
+\end{figure}
+
+\begin{figure}
+  \includegraphics[width=\columnwidth]{fig_real_gas_steam}
+  \caption{Heat capacity of superheated steam: NIST SRD~69, ideal gas, and ideal gas with the Peng--Robinson residual.}
+  \label{fig:steam}
+\end{figure}
+
 \subsection{Consistency between routes}
 For seven systems, from pure water to a five-component emulsion with suspended silica and two
 phase-change slurries, the enthalpy change predicted by Route~A was fed back to Route~B as a measured
@@ -281,8 +341,8 @@ heat. The recovered heat capacities agree to better than $10^{-6}$\,\%.
 \section{Conclusions}
 A rule-based engine computes the heat capacity of multiphase fluids from any consistent combination of
 thermodynamic information. It reports the derivation, compares independent routes and identifies
-missing information. Validation against 735 published data points, with held-out tests for every fitted
-model, supports five conclusions:
+missing information. Validation against more than 1400 published data points, with held-out tests for every
+fitted model, supports six conclusions:
 \begin{enumerate}
 \item Pure-component and $C_p$--$C_V$ relations are accurate to better than 0.5\,\%, and to 1.2\,\% up to
 100~MPa with a Tait pressure correction.
@@ -290,13 +350,17 @@ model, supports five conclusions:
 several temperatures; VLE parameters underpredict it six-fold or more. With refitted parameters the
 heat capacity of water + methanol is predicted to 2.7\,\% from independent data.
 \item Mixing rules for suspensions must use mass fractions: the volume-weighted rule errs by up to 63\,\%.
+\item Whether a mixture is liquid, boiling or vapour must follow from its own phase equilibrium: bubble points
+are reproduced to 0.3--0.5~K, and a cubic-equation residual halves the error of the vapour heat capacity at
+elevated pressure.
 \item Dissolved electrolytes must be described by their apparent molar heat capacity (0.17\,\% for NaCl(aq)
 against 2.9\,\% for the solid-heat-capacity estimate).
 \item One NRTL model fitted jointly to excess enthalpies and freezing points describes ice slurries
 consistently, at the cost of a larger freezing-point error (2.5~K held-out) than the ideal equation (0.84~K).
 \end{enumerate}
-Remaining limitations are the need for binary caloric data, the absence of vapour--liquid flash calculations
-for mixtures and of solute partitioning in emulsions, the lack of open calorimetric data for emulsions and
+Remaining limitations are the need for binary caloric data, the use of different NRTL parameter sets for
+caloric properties and phase equilibrium of aqueous alcohols, three-phase boiling of immiscible liquids
+(detected but not modelled) and of solute partitioning in emulsions, the lack of open calorimetric data for emulsions and
 PCM slurries, and an electrolyte model limited to NaCl at 298~K.
 
 \begin{acknowledgement}

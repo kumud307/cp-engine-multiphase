@@ -16,7 +16,7 @@ Case & Comparison & Metric & $N$ & mean & max \\
 2 & methanol + water: Cp, NRTL refitted to H$^E$ & AARD \% & 12 & 2.71 & 7.54 \\
 2 & ethanol + toluene: Cp, NRTL fitted to VLE + Cp$^E$ (fit quality; held-out in case 2b) & AARD \% & 11 & 1.29 & 3.14 \\
 2 & ethanol + toluene: Cp, ideal mixture (for comparison) & AARD \% & 11 & 8.33 & 12.3 \\
-2 & ethanol + toluene: VLE bubble temperature (fit quality) & $|\Delta T|$ K & 60 & 0.625 & 2.56 \\
+2 & ethanol + toluene: VLE bubble temperature (fit quality) & $|\Delta T|$ K & 60 & 0.626 & 2.56 \\
 2 & ethanol in water: activity coefficient at infinite dilution, Cp-optimised set (H$^E$+SLE) & AARD \% & 6 & 35 & 42.5 \\
 2 & ethanol in water: activity coefficient at infinite dilution, VLE set & AARD \% & 6 & 11.8 & 20.9 \\
 2 & acetone in water: activity coefficient at infinite dilution, VLE set (literature) & AARD \% & 11 & 24.6 & 26.4 \\
@@ -47,5 +47,17 @@ Case & Comparison & Metric & $N$ & mean & max \\
 4 & ice ethanol 10wt: $\int$cp app dT vs $\Delta H$ (energy conservation) & rel. dev \% & 1601 & 0.00575 & 0.00575 \\
 4 & pcm octadecane 20wt: $\int$cp app dT vs $\Delta H$ (energy conservation) & rel. dev \% & 1601 & 1.4e-08 & 1.4e-08 \\
 5 & Route B vs Route A, 7 systems & rel. dev \% & 7 & 1.1e-07 & 2.9e-07 \\
+6 & ethanol + water: bubble temperature 13-101 kPa, NRTL VLE set (engine default for phase equilibrium) & $|\Delta T|$ K & 256 & 0.257 & 3.17 \\
+6 & ethanol + water: bubble temperature 13-101 kPa, NRTL H$^E$-fitted set (caloric set, for comparison) & $|\Delta T|$ K & 256 & 4.47 & 9.18 \\
+6 & methanol + water: bubble temperature 13-101 kPa, NRTL VLE set (engine default for phase equilibrium) & $|\Delta T|$ K & 153 & 0.465 & 1.92 \\
+6 & methanol + water: bubble temperature 13-101 kPa, NRTL H$^E$-fitted set (caloric set, for comparison) & $|\Delta T|$ K & 153 & 68.2 & 181 \\
+6 & 4 vapours, cp at 0.5-10 MPa, ideal gas & AARD \% & 189 & 12.1 & 67.2 \\
+6 & 4 vapours, cp at 0.5-10 MPa, ideal gas + Peng-Robinson $C_p^R$ & AARD \% & 189 & 5.3 & 44.4 \\
+6 & 4 vapours, cp at 0.5-10 MPa, ideal gas + virial $C_p^R$ & AARD \% & 189 & 5.22 & 52.5 \\
+6 & 5 fluids, vapour pressure 0.55-0.95 $T_c$, vdW equation & AARD \% & 103 & 224 & 4184 \\
+6 & 5 fluids, vapour pressure 0.55-0.95 $T_c$, RK equation & AARD \% & 103 & 58.4 & 758 \\
+6 & 5 fluids, vapour pressure 0.55-0.95 $T_c$, SRK equation & AARD \% & 103 & 2.29 & 17.1 \\
+6 & 5 fluids, vapour pressure 0.55-0.95 $T_c$, PR equation & AARD \% & 103 & 1.35 & 9.65 \\
+6 & energy conservation through the boiling range of water + ethanol & rel. dev \% & 2 & 0.0133 & 0.0253 \\
 \bottomrule
 \end{tabular}

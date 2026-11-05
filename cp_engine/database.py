@@ -185,6 +185,17 @@ class Component:
     def has_phase(self, phase: str) -> bool:
         return phase in self.cp_corr
 
+    @property
+    def critical(self):
+        """Critical constants (T_c, P_c, V_c, ω) for the equations of state, or None."""
+        from .models.eos import Critical
+        e = self.raw.get("critical")
+        if not e:
+            return None
+        Vc = e.get("Vc")
+        return Critical(self.name, float(e["Tc"]), float(e["Pc"]), float(e["omega"]),
+                        None if Vc is None else float(Vc) * 1e-6)
+
     def cp(self, phase: str, T: float, log: Log | None = None) -> float:
         """Molar isobaric heat capacity of the pure phase, J/(mol K)."""
         if phase not in self.cp_corr:
@@ -294,14 +305,23 @@ class Component:
         return 10.0 ** (a["A"] - a["B"] / (T + a["C"])) * 1e5
 
     def Tb_at(self, P: float) -> float | None:
-        """Boiling point at pressure P from the Clausius–Clapeyron equation.
+        """Boiling point at pressure P: from the Antoine equation if available, otherwise from the
+        Clausius–Clapeyron equation
 
         1/Tb(P) = 1/Tb(1 atm) − (R/ΔHvap) ln(P / 1 atm)
         (assumes constant ΔHvap and ideal vapour).
         """
         if self.Tb is None:
             return None
-        if self.dHvap is None or abs(P - P_ATM) < 1.0:
+        if abs(P - P_ATM) < 1.0:
+            return self.Tb
+        if self.raw.get("antoine"):                 # solve P_sat(T) = P with the Antoine equation
+            from scipy.optimize import brentq
+            try:
+                return brentq(lambda T: self.psat(T) - P, 150.0, 900.0)
+            except (ValueError, OverflowError, ZeroDivisionError):
+                pass
+        if self.dHvap is None:
             return self.Tb
         return 1.0 / (1.0 / self.Tb - R / self.dHvap * math.log(P / P_ATM))
 
@@ -472,6 +492,9 @@ class Database:
                 e = d.get(prop)
                 if isinstance(e, dict) and e.get("verify"):
                     out.append(f"{k}.{prop} = {e.get('value')} {e.get('unit', '')}  ({e.get('source', '')})")
+            crit = d.get("critical")
+            if isinstance(crit, dict) and crit.get("verify"):
+                out.append(f"{k}.critical = Tc {crit.get('Tc')} K, Pc {crit.get('Pc')} Pa  ({crit.get('source', '')})")
             for group in ("cp", "density", "alpha", "kappa_T"):
                 for ph, e in d.get(group, {}).items():
                     if isinstance(e, dict) and e.get("verify"):
@@ -486,6 +509,16 @@ class Database:
                     out.append(f"binary.solubility[{p['solute']}-{p['solvent']}].dH_sol = "
                                f"{p['dH_sol']['value']} {p['dH_sol']['unit']}")
         return out
+
+
+    def eos(self, keys: list[str], kind: str = "PR"):
+        """Equation of state (PR, SRK, RK, vdW or virial) for a pure gas or a gas mixture of `keys`."""
+        from .models.eos import make_eos
+        crit = [self.get(k).critical for k in keys]
+        missing = [self.get(k).name for k, c in zip(keys, crit) if c is None]
+        if missing:
+            raise DataError(f"No critical constants for {', '.join(missing)}; real-gas correction unavailable.")
+        return make_eos(crit, kind)
 
 
 @lru_cache(maxsize=4)
