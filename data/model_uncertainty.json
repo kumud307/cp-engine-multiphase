@@ -160,10 +160,10 @@
   },
   "phase_boundaries": {
     "bubble_point_K": {
-      "value": 0.2567,
-      "max": 3.1672,
+      "value": 0.257,
+      "max": 3.1257,
       "N": 256,
-      "row": "case 6: ethanol + water: bubble temperature 13-101 kPa, NRTL VLE set (engine default for phase equilibrium)"
+      "row": "case 6: ethanol + water: bubble temperature 13-101 kPa, NRTL VLE set + Peng-Robinson vapour (engine default)"
     },
     "freezing_point_K": {
       "value": 2.5089,

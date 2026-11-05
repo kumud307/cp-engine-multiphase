@@ -14,7 +14,7 @@ small, so the parts can be worked on in parallel.
 
 ## Suggested schedule to Fri 20 Nov 2026
 
-Status on 5 Nov: code complete (185 tests pass); all validation data except a direct Cp dataset for
+Status on 5 Nov: code complete (196 tests pass; independent audit in MODEL_VERIFICATION_REPORT.md); all validation data except a direct Cp dataset for
 water + ethanol and DSC data for a PCM emulsion are in place; ethanol + toluene, methanol + n-hexane and
 n-octadecane gaps closed; manuscript drafted with real results.
 

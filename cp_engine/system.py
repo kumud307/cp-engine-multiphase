@@ -141,8 +141,12 @@ class SystemModel:
         # "HE". No single NRTL set reproduces H^E(T), freezing points and VLE of water + alcohols (joint fits
         # double the Cp error), so caloric properties and the phase split use the set fitted to each.
         self.vle_parameters = self.options.get("vle_parameters", "VLE")
-        self.vapour_model = self.options.get("vapour_model", "ideal")
         self.gas_eos = self.options.get("gas_eos", "PR")
+        # vapour model in the phase equilibrium: "eos" (default) uses φ from the SAME equation of state that gives
+        # the departure enthalpy of the vapour, so equilibrium and enthalpy share one vapour model
+        self.vapour_model = self.options.get("vapour_model", "eos")
+        if self.vapour_model == "eos" and self.gas_eos == "ideal":
+            self.vapour_model = "ideal"
         self.log = log or Log()
         if abs(P - P_ATM) > 1.0:
             self.log.assume(f"P = {P / 1e5:.4g} bar: liquid and solid Cp and H corrected from 1 atm with the exact "
@@ -164,6 +168,7 @@ class SystemModel:
         self._vle_cache: dict = {}
         self.vle_info: dict[str, dict[str, Any]] = {}
         self._warned: set = set()
+        self._dew_cache: dict = {}
         self.window: tuple[float, float] | None = None
 
     # ==================================================================
@@ -319,7 +324,8 @@ class SystemModel:
             if self.solution_model != "ideal" and len(members) > 1:
                 m = NRTL(list(members), self.db, prefer=self.vle_parameters)
                 nrtl = m if m.has_any_parameters else None
-            self._vle_cache[members] = VLE(list(members), self.db, nrtl, log=self.log, vapour=self.vapour_model)
+            self._vle_cache[members] = VLE(list(members), self.db, nrtl, log=self.log, vapour=self.vapour_model,
+                                           eos_kind=self.gas_eos)
         return self._vle_cache[members]
 
     def _vle_status(self, lo: float, hi: float) -> dict[str, tuple[str, str]]:
@@ -683,6 +689,33 @@ class SystemModel:
             self._eos_cache[keys] = self.db.eos(list(keys), self.gas_eos)
         return self._eos_cache[keys]
 
+    def _supersaturated(self, T: float, keys: tuple[str, ...], y: list[float]) -> bool:
+        """True if a gas phase of composition y is below its dew point at (T, P), i.e. would condense.
+
+        Vapour produced by the phase equilibrium (flash, pure boiling) is saturated by construction, and a
+        mixture whose dew point was already computed is known to be above it: no test. Otherwise a pure gas
+        is supersaturated if P > P_sat(T); a gas mixture if T is below its dew point from the γ–φ equilibrium
+        (Σ y_i P / (γ_i P_i^sat) > 1 with γ of the incipient liquid). The earlier test Σ y_i P/P_i^sat > 1
+        ignored γ and wrongly flagged saturated vapours of non-ideal mixtures.
+        """
+        if any(self.plans[k].behaviour in ("vle", "boil_smooth") for k in keys if k in self.plans):
+            return False
+        if any(set(keys) <= set(info["members"]) for info in self.vle_info.values()):
+            return False
+        vol = [(k, yi) for k, yi in zip(keys, y) if self._volatile(k) and self.comps[k].critical
+               and T < self.comps[k].critical.Tc]
+        if not vol:
+            return False
+        if len(vol) == 1 and len(keys) == 1:
+            return self.P > 1.02 * self.comps[keys[0]].psat(T)
+        key = (keys, tuple(round(v, 9) for v in y))
+        if key not in self._dew_cache:
+            try:
+                self._dew_cache[key] = self._vle_model(keys).dew_T(self.P, np.asarray(y))
+            except (ValueError, DataError):
+                self._dew_cache[key] = -np.inf
+        return T < self._dew_cache[key] - 0.05
+
     def _gas_residual(self, T: float, entries) -> tuple[float, float]:
         """(C_p^R, H^R) of the gas phase in J/K and J (real-gas correction from the equation of state).
 
@@ -708,13 +741,8 @@ class SystemModel:
                 self._warned.add("eos")
                 self.log.assume(f"Gas phase treated as an ideal gas ({exc}).")
             return 0.0, 0.0
-        # a vapour below its dew point (Σ y_i P / P_sat,i > 1) would condense: no EOS vapour root to trust
-        s = 0.0
-        for k, yi in zip(keys, y):
-            c = self.comps[k]
-            if c.raw.get("antoine") and c.critical and T < c.critical.Tc:
-                s += yi * self.P / c.psat(T)
-        if s > 1.02:
+        # a vapour below its dew point would condense: no EOS vapour root to trust
+        if self._supersaturated(T, keys, y):
             if "supersat" not in self._warned:
                 self._warned.add("supersat")
                 self.log.warn(f"The gas phase at {T:.1f} K and {self.P / 1e5:.4g} bar is below its dew point "
@@ -860,12 +888,20 @@ class SystemModel:
         sign = 1.0 if dT > 0 else -1.0
         ideal_m, excess_m = sign * ideal_int / dT, sign * excess_int / dT
         latent_m = dH / dT - ideal_m - excess_m
-        if not self.has_phase_change:
-            latent_m = 0.0 if abs(latent_m) < 1e-6 * abs(dH / dT) else latent_m
+        if not self.has_phase_change and abs(latent_m) < 1e-6 * abs(dH / dT):
+            # no phase change: the remainder is quadrature error, not latent heat. Keep the total exactly
+            # ΔH/ΔT (the definition) by absorbing it into the excess part, and report its size.
+            bd_quad_mismatch = latent_m
+            excess_m += latent_m
+            latent_m = 0.0
+        else:
+            bd_quad_mismatch = None
         bd = CpBreakdown(ideal_m, excess_m, latent_m, self.mass, self.moles, "mean", T1=T1, T2=T2,
                          phase_amounts={f"at T1 = {T1:.2f} K": self._flat_amounts(self.split(T1)),
                                         f"at T2 = {T2:.2f} K": self._flat_amounts(self.split(T2))})
         bd.extras["dH_J"] = dH
+        if bd_quad_mismatch is not None:
+            bd.extras["quadrature_mismatch_J_per_K"] = bd_quad_mismatch
         return bd
 
     # ------------------------------------------------------------------

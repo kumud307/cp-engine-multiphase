@@ -74,18 +74,20 @@ case,system,quantity,metric,N,mean,max,reference,status
 4,ice + water + ethanol,"freezing point, NRTL γ, VLE set, all, 2.5-72 wt%",|ΔT| K,18,4.8613876513317456,15.050161885686322,Lange's Handbook (1967) via Wikipedia 'Ethanol (data page)',ok
 4,ice + water + ethanol,engine liquidus vs SLE equation,|ΔT| K,13,1.4316356100607663e-08,1.4316356100607663e-08,internal check,ok
 4,ice_ethanol_10wt,∫cp_app dT vs ΔH (energy conservation),rel. dev %,1601,0.005752924999984768,0.005752924999984768,internal check,ok
-4,pcm_octadecane_20wt,∫cp_app dT vs ΔH (energy conservation),rel. dev %,1601,1.3546259202039046e-08,1.3546259202039046e-08,internal check,ok
-5,water (pure),Route B (Q) vs Route A (ΔH_model),rel. dev %,1,6.521485826961187e-14,6.521485826961187e-14,self-consistency,ok
-5,water + ethanol 40 wt%,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,2.8626198260854623e-07,2.8626198260854623e-07,self-consistency,ok
-5,methanol + water + ethanol + glycerol,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,2.5510819343355765e-07,2.5510819343355765e-07,self-consistency,ok
-5,CuO–water nanofluid φ = 4 %,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,6.655468115477433e-14,6.655468115477433e-14,self-consistency,ok
-5,water–toluene–ethanol emulsion + SiO2,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,2.1999678696206103e-07,2.1999678696206103e-07,self-consistency,ok
+4,pcm_octadecane_20wt,∫cp_app dT vs ΔH (energy conservation),rel. dev %,1601,1.3545918037114475e-08,1.3545918037114475e-08,internal check,ok
+5,water (pure),Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
+5,water + ethanol 40 wt%,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
+5,methanol + water + ethanol + glycerol,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
+5,CuO–water nanofluid φ = 4 %,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
+5,water–toluene–ethanol emulsion + SiO2,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
 5,ice slurry 10 wt% ethanol,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
 5,PCM slurry 20 wt% n-octadecane,Route B (Q) vs Route A (ΔH_model),rel. dev %,1,0.0,0.0,self-consistency,ok
-6,ethanol + water,"bubble temperature 13-101 kPa, NRTL VLE set (engine default for phase equilibrium)",|ΔT| K,256,0.25666217043511863,3.1671734852365034,"16 papers, NIST ThermoML",ok
-6,ethanol + water,"bubble temperature 13-101 kPa, NRTL H^E-fitted set (caloric set, for comparison)",|ΔT| K,256,4.467309162876202,9.176827748053029,"16 papers, NIST ThermoML",ok
-6,methanol + water,"bubble temperature 13-101 kPa, NRTL VLE set (engine default for phase equilibrium)",|ΔT| K,153,0.4647541137415268,1.9236632300093675,"8 papers, NIST ThermoML",ok
-6,methanol + water,"bubble temperature 13-101 kPa, NRTL H^E-fitted set (caloric set, for comparison)",|ΔT| K,153,68.24872515164385,180.99544858404101,"8 papers, NIST ThermoML",ok
+6,ethanol + water,"bubble temperature 13-101 kPa, NRTL VLE set + Peng-Robinson vapour (engine default)",|ΔT| K,256,0.25695832991317435,3.12572157955924,"16 papers, NIST ThermoML",ok
+6,ethanol + water,"bubble temperature 13-101 kPa, NRTL VLE set + ideal vapour (modified Raoult, for comparison)",|ΔT| K,256,0.25666217043511863,3.1671734852365034,"16 papers, NIST ThermoML",ok
+6,ethanol + water,"bubble temperature 13-101 kPa, NRTL H^E-fitted set (caloric set, for comparison)",|ΔT| K,256,4.524176881799862,9.276175595304153,"16 papers, NIST ThermoML",ok
+6,methanol + water,"bubble temperature 13-101 kPa, NRTL VLE set + Peng-Robinson vapour (engine default)",|ΔT| K,153,0.47119971261336746,1.7501276674882433,"8 papers, NIST ThermoML",ok
+6,methanol + water,"bubble temperature 13-101 kPa, NRTL VLE set + ideal vapour (modified Raoult, for comparison)",|ΔT| K,153,0.4647541137415268,1.9236632300093675,"8 papers, NIST ThermoML",ok
+6,methanol + water,"bubble temperature 13-101 kPa, NRTL H^E-fitted set (caloric set, for comparison)",|ΔT| K,153,72.54224682907268,206.4046296887783,"8 papers, NIST ThermoML",ok
 6,"water vapour, 10 MPa","cp 590-900 K, ideal gas (no residual)",AARD %,32,26.15690667078475,67.2227536350793,NIST SRD 69,ok
 6,"water vapour, 10 MPa","cp 590-900 K, ideal gas + C_p^R from PR",AARD %,32,9.900320051006902,44.423839893530584,NIST SRD 69,ok
 6,"water vapour, 10 MPa","cp 590-900 K, ideal gas + C_p^R from SRK",AARD %,32,9.708059039900402,44.18643029042736,NIST SRD 69,ok
@@ -138,5 +140,5 @@ case,system,quantity,metric,N,mean,max,reference,status
 6,n-dodecane,vapour pressure 0.55-0.95 T_c from the RK equation (φ_L = φ_V),AARD %,20,94.7427877215978,757.9048542443419,NIST SRD 69,ok
 6,n-dodecane,vapour pressure 0.55-0.95 T_c from the SRK equation (φ_L = φ_V),AARD %,20,2.0896087879006715,2.500047026146767,NIST SRD 69,ok
 6,n-dodecane,vapour pressure 0.55-0.95 T_c from the PR equation (φ_L = φ_V),AARD %,20,1.652019250663456,6.505859542091303,NIST SRD 69,ok
-6,ethanol + water x = 0.1,"∫cp_app dT vs ΔH through the boiling range 340-385 K (adaptive quadrature, break points at the bubble and dew points)",rel. dev %,1,0.001364028810546536,0.001364028810546536,internal consistency,ok
-6,ethanol + water x = 0.5,"∫cp_app dT vs ΔH through the boiling range 340-385 K (adaptive quadrature, break points at the bubble and dew points)",rel. dev %,1,0.025274090461502308,0.025274090461502308,internal consistency,ok
+6,ethanol + water x = 0.1,"∫cp_app dT vs ΔH through the boiling range 340-385 K (adaptive quadrature, break points at the bubble and dew points)",rel. dev %,1,4.715374024577557e-06,4.715374024577557e-06,internal consistency,ok
+6,ethanol + water x = 0.5,"∫cp_app dT vs ΔH through the boiling range 340-385 K (adaptive quadrature, break points at the bubble and dew points)",rel. dev %,1,1.837132279636222e-05,1.837132279636222e-05,internal consistency,ok

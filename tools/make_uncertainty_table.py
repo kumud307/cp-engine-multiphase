@@ -74,7 +74,7 @@ def main() -> None:
         "ideal_fallback": pick("2", "ethanol + toluene", "ideal mixture"),
         "suspension": nano,
         "phase_boundaries": {
-            "bubble_point_K": {**pick("6", "ethanol + water", "NRTL VLE set", metric="|ΔT| K")},
+            "bubble_point_K": {**pick("6", "ethanol + water", "(engine default)", metric="|ΔT| K")},
             "freezing_point_K": {**pick("2b", "ice + water + ethanol", "freezing points", metric="|ΔT| K")},
         },
     }

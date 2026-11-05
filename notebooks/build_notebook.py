@@ -267,7 +267,8 @@ print([w for w in r.warnings if "depends on the assumed width" in w][0])
 
 md("### 8.6 A boiling mixture (vapour–liquid equilibrium)\n"
    "A liquid mixture boils between its **bubble** and **dew** points, not at the boiling points of its components. "
-   "Modified Raoult's law y_i P = x_i γ_i P_i^sat (γ from NRTL, P^sat from Antoine equations fitted to NIST data); "
+   "Equal fugacities y_i φ̂_i P = x_i γ_i φ_i^sat P_i^sat (γ from NRTL, P^sat from Antoine equations fitted to NIST data, "
+   "φ from the same Peng–Robinson equation as the vapour enthalpy); "
    "between the two points an isothermal flash gives the vapour fraction and both compositions, and the latent heat "
    "of what evaporates appears in the apparent Cp.")
 code(r"""

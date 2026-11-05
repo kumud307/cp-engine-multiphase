@@ -41,8 +41,9 @@ if an output is already in K, compare (|Δ|/max > 2 % → inconsistency warning)
 - Heterogeneous mixture: c_p = Σ_phases w_p c_p,p (mass weighting).
   - Model I (inconsistent): c_p = φ c_p,s + (1 − φ) c_p,f.
   - Model II (thermal equilibrium): c_p = [φρ_s c_p,s + (1 − φ)ρ_f c_p,f] / [φρ_s + (1 − φ)ρ_f] ≡ mass weighting.
-- Vapour–liquid equilibrium (γ–φ, models/vle.py): y_i P = x_i γ_i P_i^sat (ideal vapour; option Lewis–Randall
-  φ_i = exp(B_ii P/RT)); P_i^sat from Antoine equations; non-volatile components K_i = 0.
+- Vapour–liquid equilibrium (γ–φ, models/vle.py): y_i φ̂_i P = x_i γ_i φ_i^sat P_i^sat, φ̂ and φ^sat from the same
+  equation of state as the vapour enthalpy (default PR; options: ideal vapour, Lewis–Randall virial); P_i^sat from
+  Antoine equations; non-volatile components K_i = 0. Root bracketed with the ideal-vapour K, then refined.
   - Bubble point: Σ K_i x_i = 1; dew point: Σ y_i / K_i = 1 (x_i ∝ y_i/K_i, iterated).
   - Window below T_bubble → liquid; above T_dew → vapour; otherwise isothermal flash at each T:
     Rachford–Rice Σ z_i (K_i − 1)/[1 + V(K_i − 1)] = 0, x_i = z_i/[1 + V(K_i − 1)], y_i = K_i x_i, iterate γ(x).

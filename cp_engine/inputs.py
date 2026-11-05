@@ -25,7 +25,7 @@ Options        melt_width, solution_model ("auto"|"ideal"|"nrtl"),
                sle_activity ("auto"|"ideal"|"nrtl"), liquid_phases, tolerance,
                nrtl_parameters ("HE" = H^E-fitted set, default | "VLE"),
                vle_parameters ("VLE", default | "HE": NRTL set for boiling of mixtures),
-               vapour_model ("ideal", default | "lewis_randall": virial φ in the γ–φ VLE),
+               vapour_model ("eos", default: φ from gas_eos | "ideal" | "lewis_randall": virial φ),
                gas_eos ("PR", default | "SRK" | "RK" | "vdW" | "virial" | "ideal": residual Cp of gases)
 
 Sign convention (IUPAC): Q > 0 is heat ADDED TO the system; W > 0 is work
@@ -286,8 +286,8 @@ def normalise(raw: dict | SystemInput, db: Database) -> NormalisedInput:
         raise InputError("nrtl_parameters must be 'HE' (excess-enthalpy fitted) or 'VLE'.")
     if out.options.get("vle_parameters", "VLE") not in ("HE", "VLE"):
         raise InputError("vle_parameters must be 'VLE' (fitted to phase equilibrium) or 'HE'.")
-    if out.options.get("vapour_model", "ideal") not in ("ideal", "lewis_randall"):
-        raise InputError("vapour_model must be 'ideal' or 'lewis_randall'.")
+    if out.options.get("vapour_model", "eos") not in ("eos", "ideal", "lewis_randall"):
+        raise InputError("vapour_model must be 'eos', 'ideal' or 'lewis_randall'.")
     if out.options.get("gas_eos", "PR") not in ("PR", "SRK", "RK", "vdW", "virial", "ideal"):
         raise InputError("gas_eos must be one of PR, SRK, RK, vdW, virial, ideal.")
 

@@ -1,0 +1,108 @@
+                                                                               test     reference         model  rel_error_%  pass
+                                                            A1 water liquid vs NIST  4.180600e+03  4.182948e+03 5.616655e-02  True
+                        A2 water liquid: engine = DIPPR-100 evaluated independently  4.184524e+03  4.184524e+03 0.000000e+00  True
+                           A3 Al2O3 solid: engine = Shomate evaluated independently  9.675419e+01  9.675419e+01 0.000000e+00  True
+                            A3 SiO2 solid: engine = Shomate evaluated independently  4.947010e+01  4.947010e+01 0.000000e+00  True
+                   A4 ethanol ideal gas: engine = DIPPR-107 evaluated independently  9.592586e+01  9.592586e+01 0.000000e+00  True
+                                           B1 ideal mixture, molar basis Σ x_i Cp_i  8.647166e+01  8.647166e+01 0.000000e+00  True
+                                            B2 ideal mixture, mass basis Σ w_i cp_i  3.271575e+03  3.271575e+03 0.000000e+00  True
+                                B3 real solution: excess part present (information)  8.647166e+01  1.048059e+02 2.120262e+01  True
+                              C1 nanofluid Al2O3 φ = 0.04: mass-weighted (Model II)  3.697068e+03  3.696375e+03 1.873713e-02  True
+                                       C2 suspension ΔH(290→330 K) = Σ n_i ∫Cp_i dT  1.651566e+08  1.651566e+08 1.804489e-14  True
+                                               D1 PCM slurry apparent Cp at 297.0 K  3.729905e+03  3.729905e+03 8.534350e-14  True
+                                               D1 PCM slurry apparent Cp at 300.3 K  8.965824e+03  8.965834e+03 1.166720e-04 False
+                                               D1 PCM slurry apparent Cp at 301.3 K  4.245332e+04  4.245329e+04 6.076059e-05  True
+                                               D1 PCM slurry apparent Cp at 301.8 K  2.726057e+04  2.726057e+04 2.054174e-09  True
+                                               D1 PCM slurry apparent Cp at 303.0 K  3.907864e+03  3.907865e+03 2.156773e-05  True
+                                               D1 PCM slurry apparent Cp at 305.0 K  3.787204e+03  3.787204e+03 2.671662e-11  True
+                                 D2 latent area ∫ latent dT = n ΔH_fus (± ΔCp term)  4.849194e+04  4.849170e+04 5.154890e-04  True
+                                          D3 ΔH(290→312 K) through the melting step  1.311423e+05  1.311423e+05 6.657770e-14  True
+                                      E1 melt fraction = Gaussian CDF (σ = width/4)  0.000000e+00  6.661338e-16          NaN  True
+                                         E2 Gaussian pdf normalised: ∫ f'(T) dT = 1  1.000000e+00  1.000000e+00 1.088019e-12  True
+                                                    E3 '95 % within ±width/2' claim  9.544997e-01  9.545000e-01 2.764761e-05  True
+                          E4 Gauss–Legendre n = 2: ∫(v − T∂v/∂T)dp, water 0→100 MPa  1.610650e+03  1.610629e+03 1.308322e-03  True
+                          E4 Gauss–Legendre n = 4: ∫(v − T∂v/∂T)dp, water 0→100 MPa  1.610650e+03  1.610650e+03 1.303750e-07  True
+                          E4 Gauss–Legendre n = 8: ∫(v − T∂v/∂T)dp, water 0→100 MPa  1.610650e+03  1.610650e+03 2.131651e-12  True
+                         E4 Gauss–Legendre n = 16: ∫(v − T∂v/∂T)dp, water 0→100 MPa  1.610650e+03  1.610650e+03 2.696326e-12  True
+                                       E5 Tait Cp correction (n = 8) vs closed form -4.176077e+00 -4.176077e+00 1.154781e-08  True
+                      E6 temperature stencil h = 0.5 K vs 0.05 K (truncation error) -4.175999e+00 -4.176077e+00 1.853362e-03  True
+                    E7 ∫Cp dT water liquid 273.16–373.15 K: QUADPACK vs closed form  7.550923e+03  7.550923e+03 0.000000e+00  True
+                        E7 ∫Cp dT water gas 373.15–900.0 K: QUADPACK vs closed form  1.940298e+04  1.940298e+04 1.874959e-14  True
+                      E7 ∫Cp dT Al2O3 solid 298.15–800.0 K: QUADPACK vs closed form  5.344273e+04  5.344273e+04 1.361449e-14  True
+                       E7 ∫Cp dT ethanol gas 351.4–600.0 K: QUADPACK vs closed form  2.289366e+04  2.289366e+04 3.178154e-14  True
+                      E8 interval-mean ideal part: QUADPACK vs 40-pt Gauss–Legendre  8.864791e+01  8.864791e+01 4.809201e-14  True
+                                     E9 interval mean total = ΔH/ΔT (no quadrature)  1.047050e+02  1.047050e+02 0.000000e+00  True
+                              F1 component mass conservation over 255–315 K (121 T)  0.000000e+00  2.220446e-16          NaN  True
+                                                       F2 no negative phase amounts  0.000000e+00  0.000000e+00          NaN  True
+             F3 allocation: toluene only organic, ethanol only aqueous (fixed rule)  0.000000e+00  0.000000e+00          NaN  True
+                        F4a PCM slurry 268–312 K (PCM solid at 268 K) is computable  1.000000e+00  1.070181e+04          NaN  True
+                                  F4 energy conservation ∫cp_app dT = ΔH, 290–312 K  6.973612e+04  6.973612e+04 1.041856e-07  True
+                                        F6 phase mass fractions sum to 1 at 301.0 K  1.000000e+00  1.000000e+00 0.000000e+00  True
+                                  F4 energy conservation ∫cp_app dT = ΔH, 255–285 K  1.962135e+05  1.962135e+05 4.614175e-08  True
+                                        F6 phase mass fractions sum to 1 at 270.0 K  1.000000e+00  1.000000e+00 0.000000e+00  True
+F5 two PCMs melting 1 K apart: ΔH(290→312 K) = path-independent sharp-melting value  1.445108e+05  1.445108e+05 5.981448e-12  True
+                               F5b same: ∫latent dT vs Σ n_i ΔH_fus,i (information)  6.636896e+04  6.566622e+04 1.058843e+00  True
+                                                    FD pure water 300 K: ΔT = 1.0 K  7.535597e+01  7.535581e+01 2.125289e-04  True
+                                                    FD pure water 300 K: ΔT = 0.1 K  7.535581e+01  7.535581e+01 2.125292e-06  True
+                                                   FD pure water 300 K: ΔT = 0.01 K  7.535581e+01  7.535581e+01 2.110145e-08  True
+                                                  FD pure water 300 K: ΔT = 0.001 K  7.535581e+01  7.535581e+01 2.086770e-09  True
+                                            FD water+ethanol NRTL 300 K: ΔT = 1.0 K  1.046750e+02  1.046741e+02 8.486091e-04  True
+                                            FD water+ethanol NRTL 300 K: ΔT = 0.1 K  1.046741e+02  1.046741e+02 9.354615e-06  True
+                                           FD water+ethanol NRTL 300 K: ΔT = 0.01 K  1.046741e+02  1.046741e+02 1.650708e-06  True
+                                          FD water+ethanol NRTL 300 K: ΔT = 0.001 K  1.046741e+02  1.046741e+02 1.000349e-05  True
+                                                 FD CuO nanofluid 310 K: ΔT = 1.0 K  4.134969e+06  4.134962e+06 1.649702e-04  True
+                                                 FD CuO nanofluid 310 K: ΔT = 0.1 K  4.134962e+06  4.134962e+06 1.649707e-06  True
+                                                FD CuO nanofluid 310 K: ΔT = 0.01 K  4.134962e+06  4.134962e+06 1.648109e-08  True
+                                               FD CuO nanofluid 310 K: ΔT = 0.001 K  4.134962e+06  4.134962e+06 2.366257e-09  True
+                                                    FD PCM slurry at Tm: ΔT = 1.0 K  2.690464e+04  4.245329e+04 5.779167e+01  True
+                                                    FD PCM slurry at Tm: ΔT = 0.1 K  4.219691e+04  4.245329e+04 6.075838e-01  True
+                                                   FD PCM slurry at Tm: ΔT = 0.01 K  4.245074e+04  4.245329e+04 6.015273e-03 False
+                                                  FD PCM slurry at Tm: ΔT = 0.001 K  4.245329e+04  4.245329e+04 2.085716e-09  True
+                                       FD ice slurry 10 wt% EtOH, 268 K: ΔT = 1.0 K  5.170589e+04  4.971177e+04 3.856650e+00  True
+                                       FD ice slurry 10 wt% EtOH, 268 K: ΔT = 0.1 K  4.973097e+04  4.971177e+04 3.860095e-02  True
+                                      FD ice slurry 10 wt% EtOH, 268 K: ΔT = 0.01 K  4.971196e+04  4.971177e+04 3.823171e-04  True
+                                     FD ice slurry 10 wt% EtOH, 268 K: ΔT = 0.001 K  4.971177e+04  4.971177e+04 3.649563e-07  True
+                                     FD boiling EtOH/water x=0.3, 357 K: ΔT = 1.0 K  3.898049e+03  3.750221e+03 3.792366e+00  True
+                                     FD boiling EtOH/water x=0.3, 357 K: ΔT = 0.1 K  3.751631e+03  3.750221e+03 3.756923e-02  True
+                                    FD boiling EtOH/water x=0.3, 357 K: ΔT = 0.01 K  3.750235e+03  3.750221e+03 3.719345e-04  True
+                                   FD boiling EtOH/water x=0.3, 357 K: ΔT = 0.001 K  3.750221e+03  3.750221e+03 5.324674e-08  True
+                                                  FD steam 10 MPa 770 K: ΔT = 1.0 K  4.502830e+01  4.502828e+01 3.643710e-05  True
+                                                  FD steam 10 MPa 770 K: ΔT = 0.1 K  4.502826e+01  4.502828e+01 4.973465e-05  True
+                                                 FD steam 10 MPa 770 K: ΔT = 0.01 K  4.502826e+01  4.502828e+01 5.059720e-05  True
+                                                FD steam 10 MPa 770 K: ΔT = 0.001 K  4.502826e+01  4.502828e+01 5.060367e-05  True
+                     G1 PR departure H^R water 773.15 K 10 MPa vs ∫[V − T(∂V/∂T)]dP -2.317103e+03 -2.317103e+03 9.449976e-06  True
+                                                            G2 Cp^R = ∂H^R/∂T water  6.584629e+00  6.584652e+00 3.351164e-04  True
+                    G1 PR departure H^R n-hexane 550.0 K 2 MPa vs ∫[V − T(∂V/∂T)]dP -3.399440e+03 -3.399442e+03 4.303277e-05  True
+                                                         G2 Cp^R = ∂H^R/∂T n-hexane  1.645350e+01  1.645367e+01 1.009097e-03  True
+                           G3 no double counting: Tait correction for gases is zero  0.000000e+00  0.000000e+00          NaN  True
+                       G4 H(T, 10 MPa) − H(T, 1 atm) of steam = n[H^R(P) − H^R(P0)] -2.294758e+03 -2.294758e+03 1.981679e-13  True
+          G5 H_gas − H_liq at T_b, 1 atm = measured ΔH_vap (reference-state offset)  4.065000e+04  4.065000e+04 0.000000e+00  True
+                    G6 departure term kept for a SATURATED vapour in the VLE region  5.522292e-02  5.522292e-02 0.000000e+00  True
+
+77 / 79 passed
+                                parameter  sensible point 290 K  point at Tm  mean 295–308 K  value change
+                           melt width 1 K              0.000000     0.911373    0.000000e+00           NaN
+                           melt width 4 K              0.000000    -0.455688   -7.875922e-11           NaN
+                        w_C18 0.21 (+5 %)             -0.006331     0.045075    2.208327e-02           NaN
+                            Cp water +1 %              0.006657     0.000807    4.550629e-03           NaN
+               T +1 K at 290 K (sensible)                   NaN          NaN             NaN      0.000246
+                    T +0.1 K at Tm (peak)                   NaN          NaN             NaN     -0.017848
+                       x_EtOH 0.30 → 0.31                   NaN          NaN             NaN     -0.006001
+    P 1 atm → 100 bar (water+EtOH, 300 K)                   NaN          NaN             NaN     -0.005967
+NRTL HE set → VLE set (water+EtOH, 300 K)                   NaN          NaN             NaN     -0.153622
+                        CuO φ 0.04 → 0.05                   NaN          NaN             NaN     -0.043992
+                                case       outcome       cp_mass                                                                                                                                      message
+               x → 0 (1e-12 ethanol)         value   4182.948099                                                                                                                                             
+                 x → 1 (1e-12 water)         value   2454.199353                                                                                                                                             
+                               φ = 0         value   4182.948099                                                                                                                                             
+                  φ = 1 (solid only)         value    532.585358                                                                                                                                             
+               T exactly T_m (water)         value 269300.379719 T = 273.15 K lies inside the smoothed phase-change range of Water (width 2 K), so this point apparent Cp depends on the assumed width. Width
+         T at bubble point (x = 0.1)         value   4333.638437                                                                                                                                             
+                             T = 0 K error message           NaN                                                                                              InputError: T = 0 K is not above absolute zero.
+                             T = NaN error message           NaN                                                                                                  InputError: T = nan is not a finite number.
+                          negative P error message           NaN                                                                                                      InputError: P = -1 Pa must be positive.
+                   unknown component error message           NaN DataError: Unknown component 'unobtainium'. Available: water, ethanol, methanol, glycerol, acetone, n-hexane, toluene, n-dodecane, n-octadec
+                   fractions sum 1.2 error message           NaN      InputError: mass_fractions sum to 1.2, not 1 (tolerance 0.001). Correct them, or leave exactly one out to have it filled automatically.
+                             T1 = T2 error message           NaN                                                      InputError: T1 = T2: a heat capacity cannot be obtained from a zero temperature change.
+water at 300 °C liquid (beyond data) error message           NaN Rule 'mixture_volumetric_properties' could not be applied: density of Water (liquid): T = 573.15 K is outside the correlation range [273.15,
+        gas declared below dew point         value   1864.329977 Water was declared gas at 300.00 K, below its boiling point (373.12 K): valid only as a vapour below its saturation partial pressure (ideal 

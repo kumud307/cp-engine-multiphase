@@ -16,7 +16,11 @@ Two ways of describing how much has changed phase are provided here:
    with a smooth step:
         f(T) = ½ [1 + erf((T − T_m) / (σ √2))],   σ = width / 4
    (≈ 95 % of the melting happens within ±width/2 of T_m).  df/dT is a
-   Gaussian whose area is exactly 1, so ∫ latent cp dT = ΔH_fus exactly.
+   Gaussian whose area is exactly 1. The latent part is f'(T)[H_L(T) − H_S(T)] with
+   H_L − H_S = ΔH_fus + ∫_{Tm}^{T} ΔCp dT (Kirchhoff), so its area is n[ΔH_fus + ½σ² dΔCp/dT] for a
+   linear ΔCp: ΔH_fus exactly only if ΔCp is constant (the correction is < 0.001 % for the PCM data).
+   The step is cut at ±8σ (f = 0 or 1 exactly; neglected tail mass 1.2e-15), so the property
+   correlations of a phase that is absent are not evaluated far outside their ranges.
 
 2. Solid–liquid equilibrium (SLE) in a solution (ice slurry in a brine or
    an alcohol solution, salt crystals in their saturated solution).
@@ -40,15 +44,25 @@ from ..database import R
 # ---------------------------------------------------------------------------
 # 1. Smooth melting of a pure substance
 # ---------------------------------------------------------------------------
+TAIL_SIGMAS = 8.0      # Gaussian cut-off: 1 − erf(8/√2) = 1.2e-15
+
+
 def melt_fraction(T: float, Tm: float, width: float) -> float:
     """Liquid fraction f(T) = ½[1 + erf((T − Tm)/(σ√2))], σ = width/4."""
     sigma = width / 4.0
-    return 0.5 * (1.0 + math.erf((T - Tm) / (sigma * math.sqrt(2.0))))
+    z = (T - Tm) / sigma
+    if z <= -TAIL_SIGMAS:
+        return 0.0
+    if z >= TAIL_SIGMAS:
+        return 1.0
+    return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
 
 
 def melt_fraction_derivative(T: float, Tm: float, width: float) -> float:
     """df/dT = Gaussian with standard deviation σ = width/4 (area 1)."""
     sigma = width / 4.0
+    if abs(T - Tm) >= TAIL_SIGMAS * sigma:
+        return 0.0
     return math.exp(-0.5 * ((T - Tm) / sigma) ** 2) / (sigma * math.sqrt(2 * math.pi))
 
 

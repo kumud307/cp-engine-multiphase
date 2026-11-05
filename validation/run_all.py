@@ -80,7 +80,7 @@ def condensed(df: pd.DataFrame) -> pd.DataFrame:
     rows.append({"case": "5", "what": f"Route B vs Route A, {len(c5)} systems", "metric": "rel. dev %",
                  "N": len(c5), "mean": c5["mean"].mean(), "max": c5["max"].max()})
     c6 = ok[ok.case == "6"]
-    for _, r in c6[c6.quantity.str.contains("bubble temperature")].iterrows():
+    for _, r in c6[c6.quantity.str.contains("bubble temperature") & ~c6.quantity.str.contains("ideal vapour")].iterrows():
         rows.append({"case": "6", "what": f"{r.system}: {r.quantity}", "metric": r.metric, "N": r.N,
                      "mean": r["mean"], "max": r["max"]})
     for tag, label in (("ideal gas (no residual)", "4 vapours, cp at 0.5-10 MPa, ideal gas"),

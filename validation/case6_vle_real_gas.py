@@ -31,9 +31,11 @@ def bubble_rows(engine, save):
     d = d[(d.x_alcohol > 0) & (d.x_alcohol < 1) & ~d.doi.isin(EXCLUDED_PAPERS)]
     for alc in ("ethanol", "methanol"):
         g = d[d.alcohol == alc]
-        for prefer, label in (("VLE", "NRTL VLE set (engine default for phase equilibrium)"),
-                              ("HE", "NRTL H^E-fitted set (caloric set, for comparison)")):
-            v = VLE([alc, "water"], db, NRTL([alc, "water"], db, prefer=prefer))
+        for prefer, vap, label in (
+                ("VLE", "eos", "NRTL VLE set + Peng-Robinson vapour (engine default)"),
+                ("VLE", "ideal", "NRTL VLE set + ideal vapour (modified Raoult, for comparison)"),
+                ("HE", "eos", "NRTL H^E-fitted set (caloric set, for comparison)")):
+            v = VLE([alc, "water"], db, NRTL([alc, "water"], db, prefer=prefer), vapour=vap)
             dT = np.array([v.bubble_T(P * 1e3, [x, 1 - x]) - T for x, P, T in zip(g.x_alcohol, g.P_kPa, g.T_K)])
             rows.append(row("6", f"{alc} + water", f"bubble temperature 13-101 kPa, {label}", len(dT),
                             float(np.mean(np.abs(dT))), float(np.max(np.abs(dT))),
@@ -41,8 +43,8 @@ def bubble_rows(engine, save):
     if save:
         from cp_engine.plotting import plot_data_vs_models
         g = d[(d.alcohol == "ethanol") & ((d.P_kPa - 101.3).abs() < 0.5)]
-        v = VLE(["ethanol", "water"], db, NRTL(["ethanol", "water"], db, prefer="VLE"))
-        vh = VLE(["ethanol", "water"], db, NRTL(["ethanol", "water"], db, prefer="HE"))
+        v = VLE(["ethanol", "water"], db, NRTL(["ethanol", "water"], db, prefer="VLE"), vapour="eos")
+        vh = VLE(["ethanol", "water"], db, NRTL(["ethanol", "water"], db, prefer="HE"), vapour="eos")
         xs = np.linspace(0.002, 0.998, 120)
         groups = {"101.3 kPa": {"data": (g.x_alcohol, g.T_K - 273.15), "models": {
             "bubble point, VLE set": (xs, [v.bubble_T(101325.0, [x, 1 - x]) - 273.15 for x in xs]),

@@ -141,10 +141,12 @@ and the interval mean is $[H(T_2)-H(T_1)]/[m(T_2-T_1)]$.
 \subsection{Boiling mixtures and real gases}
 A miscible liquid mixture that contains volatile components boils between its bubble and dew points, not at
 the boiling points of its components. Equal fugacities in the two phases with the Lewis--Randall reference
-for the liquid and an ideal vapour give the modified Raoult's law,
+for the liquid give
 \begin{equation}
-y_iP=x_i\gamma_i(T,\mathbf{x})P_i^\mathrm{sat}(T),
+y_i\hat\phi_iP=x_i\gamma_i(T,\mathbf{x})\phi_i^\mathrm{sat}P_i^\mathrm{sat}(T),
 \end{equation}
+where the vapour fugacity coefficients are taken from the same Peng--Robinson equation that supplies the residual
+enthalpy of the vapour, so that phase equilibrium and enthalpy share one vapour model,
 with $\gamma_i$ from NRTL and $P_i^\mathrm{sat}$ from Antoine equations fitted to the NIST saturation
 data \cite{NISTFluid}. Bubble and dew points follow from $\sum K_ix_i=1$ and $\sum y_i/K_i=1$
 ($K_i=y_i/x_i$); between them an isothermal flash (Rachford--Rice equation \cite{Rachford1952}, iterated on
@@ -179,7 +181,7 @@ data were obtained as follows:
 \item NIST saturation tables and superheated-vapour isobars of five fluids \cite{NISTFluid}, and 502 bubble
 points of water + ethanol and water + methanol from 26 papers in the ThermoML archive.
 \end{itemize}
-The software passes 185 automated tests, including regression tests against these data and the worked
+The software passes 196 automated tests, including regression tests against these data and the worked
 equation-of-state examples of the course. Every result carries an expected deviation from measurements,
 obtained by combining (in quadrature) the deviation of each model ingredient in this validation, weighted by
 its share of $C_p$.
@@ -298,14 +300,14 @@ change to better than 0.01\,\%.
 
 \subsection{Boiling mixtures and real gases}
 Bubble temperatures of water + ethanol and water + methanol at 13--101~kPa are reproduced to 0.26~K (256
-points, 16 papers) and 0.46~K (153 points, 8 papers) with VLE-regressed NRTL parameters, and the
+points, 16 papers) and 0.47~K (153 points, 8 papers) with VLE-regressed NRTL parameters, and the
 minimum-boiling azeotrope of water + ethanol is found at $x_\mathrm{EtOH}=0.90$, 351.3~K
 (Figure~\ref{fig:vle}). Two further papers deviate from all others by more than 2~K on average and were
 excluded. The parameter sets refitted to $H^E$, which give the best excess heat capacities, place the bubble
-points 4.5~K (ethanol) and 68~K (methanol) too high. A single set fitted to $H^E$, freezing points and
+points 4.5~K (ethanol) and 73~K (methanol) too high. A single set fitted to $H^E$, freezing points and
 bubble points together doubled the heat-capacity error of water + methanol (2.7 to 5.3\,\%), so caloric
 properties and the phase split use the set regressed to each kind of data. Through the boiling range the
-integral of $c_{p,\mathrm{app}}$ equals $\Delta H$ to 0.03\,\%.
+integral of $c_{p,\mathrm{app}}$ equals $\Delta H$ to $2\times10^{-5}$\,\%.
 
 For vapours at 0.5--10~MPa (189 NIST points for water, methanol, $n$-hexane and toluene) the ideal-gas heat
 capacity deviates by 12.1\,\% on average; adding the Peng--Robinson residual reduces this to 5.3\,\%

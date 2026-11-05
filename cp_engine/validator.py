@@ -19,6 +19,8 @@ All problems raise subclasses of CpEngineError with a specific message.
 """
 from __future__ import annotations
 
+import math
+
 from .database import Database
 from .errors import InputError, PhaseError
 from .inputs import NormalisedInput
@@ -28,6 +30,14 @@ PHASE_TOL_K = 0.5   # tolerance for phase-consistency checks
 
 def validate(inp: NormalisedInput, db: Database) -> None:
     k, log = inp.known, inp.log
+
+    # ---- every number must be finite (NaN passes "x <= 0" tests silently) -----
+    for sym, v in k.items():
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and not math.isfinite(v):
+            raise InputError(f"{sym} = {v} is not a finite number.")
+    for comp, n in (inp.amounts or {}).items():
+        if not math.isfinite(n):
+            raise InputError(f"The amount of {comp} is not a finite number ({n}).")
 
     # ---- state ----------------------------------------------------------------
     for sym in ("T", "T1", "T2"):

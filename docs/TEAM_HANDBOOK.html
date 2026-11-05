@@ -126,7 +126,8 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -e .[dev]
 
-pytest                                   # 185 tests, ~20 s
+pytest                                   # 196 tests, ~25 s
+pytest audit/test_independent.py         # independent audit, 82 checks
 python validation/run_all.py             # all literature comparisons, figures and tables (~25 s)
 python -m cp_engine                      # question-and-answer mode in the terminal
 jupyter notebook notebooks/CP_Engine_Demo.ipynb
@@ -409,20 +410,22 @@ statement, because wᵢ = xᵢMᵢ/M.</p>
   below the bubble point → liquid (even above a pure boiling point); above the dew point → vapour;
   in between → <strong>isothermal flash</strong> at each T.</li>
 <li><strong>γ–φ equilibrium</strong> (lecture "Property relationships for mixtures", slides 24–28): f̂ᵢᴸ = f̂ᵢⱽ gives the
-  modified Raoult's law yᵢP = xᵢγᵢPᵢˢᵃᵗ (ideal vapour; option <code>vapour_model="lewis_randall"</code> adds the virial
-  φᵢ). γᵢ from NRTL; Pᵢˢᵃᵗ from Antoine equations fitted to NIST saturation data (≤ 0.3 % for water).</li>
+  yᵢφ̂ᵢP = xᵢγᵢφᵢˢᵃᵗPᵢˢᵃᵗ. The vapour fugacity coefficients come from the <strong>same Peng–Robinson equation
+  that gives the vapour's departure enthalpy</strong>, so equilibrium and enthalpy use one vapour model (options:
+  <code>vapour_model="ideal"</code> = modified Raoult, <code>"lewis_randall"</code> = virial). γᵢ from NRTL; Pᵢˢᵃᵗ from Antoine
+  equations fitted to NIST saturation data (≤ 0.3 % for water).</li>
 <li>Bubble point: Σ Kᵢxᵢ = 1; dew point: Σ yᵢ/Kᵢ = 1; flash: Rachford–Rice Σ zᵢ(Kᵢ − 1)/[1 + V(Kᵢ − 1)] = 0,
   iterated because γ depends on the liquid composition.</li>
 <li>Non-volatile components (glycerol, salts, n-dodecane) stay in the liquid: K = 0, no dew point, and the
   bubble point rises (boiling-point elevation).</li>
 <li>Enthalpy in the two-phase region: liquid at x (with Hᴱ) + vapour at y (ideal-gas path from T_b + Hᴿ). The
-  apparent Cp = dH/dT includes the latent heat of whatever evaporates as T rises; ∫cp dT = ΔH to 0.03 %.</li>
+  apparent Cp = dH/dT includes the latent heat of whatever evaporates as T rises; ∫cp dT = ΔH to 2×10⁻⁵ %.</li>
 <li><strong>Validation (case 6):</strong> bubble points of 26 papers in the ThermoML archive, 13–101 kPa:
-  water + ethanol <strong>0.26 K</strong> (256 points), water + methanol <strong>0.46 K</strong> (153 points). The azeotrope comes out
+  water + ethanol <strong>0.26 K</strong> (256 points), water + methanol <strong>0.47 K</strong> (153 points). The azeotrope comes out
   at x = 0.90, 351.3 K. Two papers that disagree with all others by &gt; 2 K on average are excluded (listed
   in <code>validation/case6_vle_real_gas.py</code>).</li>
 <li><strong>Two NRTL sets, on purpose.</strong> The Hᴱ-fitted sets (best for Cp) give bubble points 4.5 K (ethanol) and
-  68 K (methanol!) off; the VLE sets give 0.3–0.5 K but Cpᴱ 3–6 times too small. We tried one set fitted to
+  73 K (methanol!) off; the VLE sets give 0.3–0.5 K but Cpᴱ 3–6 times too small. We tried one set fitted to
   Hᴱ + freezing points + bubble points together: Cp errors doubled (water + methanol 2.7 → 5.3 %). So caloric
   properties use the Hᴱ set and the phase split uses the VLE set (<code>vle_parameters</code>). Ethanol + toluene has
   one set fitted to both.</li>
@@ -647,7 +650,7 @@ statement, because wᵢ = xᵢMᵢ/M.</p>
 <tr>
 <td>6</td>
 <td>Bubble points, water + ethanol / methanol (409 points, 24 papers)</td>
-<td><strong>0.26 K / 0.46 K</strong> (Hᴱ sets: 4.5 K / 68 K)</td>
+<td><strong>0.26 K / 0.47 K</strong> (Hᴱ sets: 4.5 K / 73 K)</td>
 <td>The engine knows when a mixture boils</td>
 </tr>
 <tr>
@@ -665,7 +668,7 @@ statement, because wᵢ = xᵢMᵢ/M.</p>
 <tr>
 <td>6</td>
 <td>∫cp_app dT vs ΔH through a boiling range</td>
-<td>≤ 0.03 %</td>
+<td>≤ 2×10⁻⁵ %</td>
 <td>Latent heat of boiling counted exactly once</td>
 </tr>
 <tr>
@@ -725,7 +728,7 @@ statement, because wᵢ = xᵢMᵢ/M.</p>
 <li>Cpᴱ needs binary parameters. Four pairs are validated (water + ethanol, water + methanol and
    ethanol + toluene fitted; for dilute water + glycerol ideal mixing is adequate). Without parameters
    the engine falls back to ideal mixing and warns (it was 8 % for ethanol + toluene before the fit).</li>
-<li>Boiling: one liquid phase + vapour is modelled (γ–φ, ideal vapour). Three-phase boiling of immiscible
+<li>Boiling: one liquid phase + vapour is modelled (γ–φ with Peng–Robinson vapour). Three-phase boiling of immiscible
    liquids (water + toluene) is detected and warned about, not modelled. Caloric properties and the phase
    split use different NRTL sets for water + alcohols (a measured trade-off, section 5.11).</li>
 <li>Real gases: cubic EOS with k_ij = 0; errors up to 44 % for steam within ~20 K of saturation at 10 MPa
@@ -807,7 +810,7 @@ statement, because wᵢ = xᵢMᵢ/M.</p>
     By differencing H only with respect to the phase amounts: H(T; n(T±h)), with properties frozen at T.
     H is then linear in n, so there is no integration noise.</li>
 <li><strong>How did you test the code?</strong>
-    185 pytest tests: units, limits (φ→0, φ→1, xᵢ→1, Cpᴱ→0 at the pure ends), ideal reduction,
+    196 pytest tests (plus 82 independent audit checks): units, limits (φ→0, φ→1, xᵢ→1, Cpᴱ→0 at the pure ends), ideal reduction,
     bad input, N = 2, 3 and 5 components, all routes, round trips, and regression tests against the
     literature data.</li>
 <li><strong>What happens with bad input?</strong>
@@ -872,7 +875,21 @@ statement, because wᵢ = xᵢMᵢ/M.</p>
 <li><strong>"What is the uncertainty of the number you just printed?"</strong>
     It is printed: e.g. water + methanol ± 2.4 %. It is built from our validation, each ingredient's measured
     deviation × its share of Cp, combined as √Σu². Inside a phase change the boundary location (± 0.3 K for
-    bubble points, ± 2.5 K for freezing points) matters more, and we say that instead of hiding it.</li>
+    bubble points, ± 2.5 K for freezing points) matters more, and we say that instead of hiding it.
+41a. <strong>"Has anyone checked this independently? How do you know it's right?"</strong>
+    <code>MODEL_VERIFICATION_REPORT.md</code>: every key equation derived again and compared with the code; 79 reference
+    values computed without the engine (closed-form Kirchhoff and Tait integrals, NIST tables, scipy.stats);
+    finite-difference checks of Cp = dH/dT converging as ΔT²; energy conserved to 10⁻⁷–10⁻¹¹ through every kind
+    of transition. Two defects were found and fixed (a false "would condense" warning in boiling mixtures; NaN
+    input accepted). Section J of the report has 28 more viva questions on this code.
+41b. <strong>"Where is Gaussian quadrature in your model?"</strong>
+    8-point Gauss–Legendre for the pressure integrals of the Tait correction (exact to 10⁻¹² against the closed
+    form; the Jacobian is (P − P₀)/2) and adaptive Gauss–Kronrod (QUADPACK) for ∫Cp dT and interval means. The
+    Gaussian <em>distribution</em> of melting temperatures needs no quadrature: its CDF is erf, cut at ±8σ.
+41c. <strong>"Is the vapour in your phase equilibrium the same vapour as in your enthalpy?"</strong>
+    Yes, since the audit: both use Peng–Robinson (fugacity coefficients in the VLE, departure enthalpy in H).
+    Before, the VLE assumed an ideal vapour (an inconsistency of about 0.3 % of ΔH_vap at 1 atm); bubble points
+    are unchanged (0.26 / 0.47 K) and energy is now conserved through boiling to 10⁻⁵ %.</li>
 <li><strong>"Which postulate tells you how many inputs Route A needs?"</strong>
     Postulate I: a simple system's stable equilibrium state is fixed by n + 2 independent properties. Route A
     needs T, P and the n amounts; if one is missing, the engine's backward search says which.</li>
