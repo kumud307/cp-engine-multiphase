@@ -44,12 +44,13 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -e .[dev]
 
-pytest                                   # 201 tests, ~25 s
+pytest                                   # 214 tests, ~25 s
 pytest audit/test_independent.py         # independent audit, 82 checks
 python validation/run_all.py             # all literature comparisons, figures and tables (~5 min)
 python pitch_demo.py                     # the 5-minute pitch demo: 7 short demos (~5 s); `python pitch_demo.py 4` runs one,
                                          # add `full` for the complete report of each case
 python -m cp_engine                      # question-and-answer mode in the terminal
+python webapp/server.py                  # website at http://localhost:8080 (also runs on Replit: see webapp/README.md)
 jupyter notebook notebooks/CP_Engine_Demo.ipynb
 ```
 

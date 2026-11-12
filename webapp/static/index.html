@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cp Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: examples across the top, then inputs (left) and the answer (right); the Cp(T) plot spans below.
+   Graph-paper neutral, one steam-blue accent, ochre only for warnings. */
+:root {
+  --bg: #f2f5f3; --paper: #fbfcfb; --ink: #1b2a2f; --ink-soft: #4a5b61; --rule: #d5dedb; --field: #ffffff;
+  --accent: #1f5f82; --accent-soft: #e2eef4; --warn: #8a5512; --warn-soft: #f6ead6; --bad: #9b2c2c; --bad-soft: #f7e3e1;
+  --muted: #6f8085;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11181a; --paper: #172124; --ink: #e2e9e8; --ink-soft: #aebcbe; --rule: #2a383b; --field: #101719;
+    --accent: #7db6d3; --accent-soft: #1d3440; --warn: #e3a95d; --warn-soft: #33281a; --bad: #f0a09a; --bad-soft: #3a2020;
+    --muted: #8a9b9e; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15.5px; line-height: 1.5; padding: 22px 16px 60px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(26px, 4vw, 36px); margin: 0; line-height: 1.1; }
+header p { margin: 0; color: var(--ink-soft); flex: 1 1 380px; }
+header .eq { font-family: var(--mono); font-size: 14px; color: var(--accent); white-space: nowrap; }
+h2 { font-family: var(--display); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin: 0; }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; cursor: pointer; }
+.chip { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 5px 13px; font-family: var(--display); font-size: 15px; }
+.chip:hover, .chip:focus-visible { background: var(--accent-soft); outline: none; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.concept { color: var(--ink-soft); min-height: 1.5em; margin: 0; max-width: 100ch; }
+.concept b { font-family: var(--display); letter-spacing: .03em; color: var(--ink); }
+.cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 18px; align-items: start; }
+@media (max-width: 880px) { .cols { grid-template-columns: 1fr; } }
+label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--ink-soft); min-width: 0; }
+input, select, textarea { font: inherit; font-size: 15px; color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 4px; padding: 6px 8px; min-width: 0; width: 100%; }
+input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.comprow { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 3fr) minmax(0, 3fr); gap: 8px; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.primary { background: var(--accent); color: var(--paper); border: 0; border-radius: 4px; padding: 9px 18px; font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: .02em; }
+.primary:hover { filter: brightness(1.1); } .primary:disabled { opacity: .6; cursor: progress; }
+.ghost { background: none; border: 1px solid var(--rule); color: var(--ink); border-radius: 4px; padding: 8px 14px; font-family: var(--display); font-size: 15px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.hero { display: flex; flex-wrap: wrap; gap: 6px 28px; align-items: baseline; }
+.hero .big { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 5vw, 50px); line-height: 1; font-variant-numeric: tabular-nums; }
+.hero .unit { font-size: 16px; color: var(--ink-soft); font-weight: 400; }
+.hero .second { font-size: 19px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.sub { margin: 0; color: var(--ink-soft); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-right: 0; padding-left: 10px; }
+.share { display: block; height: 4px; background: var(--accent); border-radius: 2px; margin-top: 3px; min-width: 1px; }
+ul.msgs { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; font-size: 14.5px; }
+.box { border-left: 3px solid var(--rule); padding: 6px 0 6px 12px; display: flex; flex-direction: column; gap: 5px; }
+.box.warn { border-color: var(--warn); background: var(--warn-soft); padding-right: 10px; border-radius: 0 4px 4px 0; }
+.box.bad { border-color: var(--bad); background: var(--bad-soft); padding-right: 10px; border-radius: 0 4px 4px 0; }
+.box.warn h2 { color: var(--warn); } .box.bad h2 { color: var(--bad); }
+details { border-top: 1px solid var(--rule); padding-top: 8px; }
+summary { cursor: pointer; font-family: var(--display); font-weight: 600; color: var(--accent); }
+pre { font-family: var(--mono); font-size: 12.5px; line-height: 1.45; background: var(--accent-soft); padding: 10px 12px; border-radius: 4px; overflow-x: auto; margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.empty { color: var(--muted); margin: 0; }
+/* plot */
+.plot { position: relative; }
+.plot svg { width: 100%; height: auto; display: block; touch-action: none; }
+.plot .gridline { stroke: var(--rule); stroke-width: 1; }
+.plot .axis text { fill: var(--muted); font-family: var(--body); font-size: 12px; }
+.plot .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.plot .cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.plot .dot { fill: var(--accent); stroke: var(--paper); stroke-width: 2; }
+.tip { position: absolute; pointer-events: none; background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 6px 9px; font-size: 13px; line-height: 1.4; box-shadow: 0 2px 8px rgba(0,0,0,.12); white-space: nowrap; display: none; font-variant-numeric: tabular-nums; }
+.tip b { font-family: var(--display); }
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 12px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Cp Engine</h1>
+  <p>Specific heat of multiphase fluids: solutions, suspensions, slurries, boiling mixtures and real gases. CL 202 Topic 5, IIT Gandhinagar.</p>
+  <span class="eq">Cp = (∂H/∂T)<sub>P</sub></span>
+</header>
+
+<section class="card" aria-label="Examples">
+  <h2>Try an example</h2>
+  <div class="presets" id="presets"></div>
+  <p class="concept" id="concept">Pick an example, or fill in the form. Leave blank whatever you do not know: the engine uses every route to Cp that your inputs allow, and says what is missing otherwise.</p>
+</section>
+
+<div class="cols">
+<form class="card" id="form" autocomplete="off">
+  <h2>Composition</h2>
+  <label>Amounts are given as
+    <select id="basis"></select>
+  </label>
+  <div id="rows" style="display:flex;flex-direction:column;gap:8px"></div>
+  <p class="hint">Phase “auto” lets the engine decide from melting and boiling points, miscibility and solubility. One fraction may be left blank; it is filled so that the sum is 1.</p>
+
+  <h2>State</h2>
+  <div class="grid3">
+    <label>Temperature T <input name="T" placeholder="25 C"></label>
+    <label>or from T1 <input name="T1" placeholder="20 C"></label>
+    <label>to T2 <input name="T2" placeholder="30 C"></label>
+  </div>
+  <div class="grid3">
+    <label>Pressure P <input name="P" placeholder="1 atm"></label>
+    <label>Solution model
+      <select name="solution_model"><option value="auto">auto (NRTL where fitted)</option><option value="ideal">ideal solution</option></select></label>
+    <label>Gas model
+      <select name="gas_eos"><option value="default">Peng–Robinson</option><option value="SRK">Soave–RK</option><option value="RK">Redlich–Kwong</option><option value="vdW">van der Waals</option><option value="virial">virial</option><option value="ideal">ideal gas</option></select></label>
+  </div>
+
+  <details id="measured">
+    <summary>Measured quantities (calorimetry, entropy, Cv)</summary>
+    <div style="display:flex;flex-direction:column;gap:10px;padding-top:10px">
+      <div class="grid3">
+        <label>Total mass <input name="total_mass" placeholder="2 kg"></label>
+        <label>Heat added Q <input name="Q" placeholder="83.7 kJ"></label>
+        <label>Shaft work W <input name="W" placeholder="0 J"></label>
+      </div>
+      <div class="grid3">
+        <label>Enthalpy change ΔH <input name="dH" placeholder="40 kJ"></label>
+        <label>Entropy change ΔS <input name="dS" placeholder="280.74 J/K"></label>
+        <label>Cv <input name="Cv" placeholder="4.13 kJ/(kg K)"></label>
+      </div>
+      <label>Process
+        <select name="process"><option value="">not specified</option><option value="constant_P">constant pressure</option><option value="constant_V">constant volume</option><option value="adiabatic">adiabatic</option><option value="adiabatic_constant_P">adiabatic, constant pressure</option></select></label>
+      <p class="hint">Sign convention: Q &gt; 0 is heat added to the system, W &gt; 0 is work done on it.</p>
+    </div>
+  </details>
+
+  <div class="actions">
+    <button class="primary" type="submit" id="go">Compute Cp</button>
+    <button class="ghost" type="button" id="clear">Clear</button>
+    <span class="hint" id="status" role="status"></span>
+  </div>
+</form>
+
+<section class="card" id="result" aria-live="polite">
+  <h2>Result</h2>
+  <p class="empty">The answer appears here: Cp on mass and molar basis, the route used, the split into ideal, excess and latent parts, the phases present, and every assumption the engine made.</p>
+</section>
+</div>
+
+<section class="card">
+  <h2>Cp against temperature</h2>
+  <div class="actions">
+    <label style="flex:0 1 140px">From <input id="c1" placeholder="-15 C"></label>
+    <label style="flex:0 1 140px">To <input id="c2" placeholder="5 C"></label>
+    <button class="ghost" type="button" id="plotbtn" style="align-self:flex-end">Plot Cp(T)</button>
+    <span class="hint" id="plotstatus" role="status" style="align-self:flex-end"></span>
+  </div>
+  <p class="hint">Uses the composition and pressure from the form. A peak means a phase is melting or boiling in that range: the area under it is the latent heat.</p>
+  <div class="plot" id="plot"></div>
+  <details id="plottable" hidden><summary>Values as a table</summary><div class="tablewrap" id="plottablebody"></div></details>
+</section>
+
+<footer>Every number is computed live by the <code>cp_engine</code> Python package in this project (over 200 automated tests, validated against NIST and published measurements). Component data: 13 components; new ones need only a data entry.</footer>
+</div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (v, d = 1) => v == null ? "–" : Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const NROWS = 4;
+let META = { components: [], bases: [], presets: [] };
+
+function buildRows() {
+  const opts = '<option value=""></option>' + META.components.map(c => `<option value="${esc(c.key)}">${esc(c.name)}</option>`).join("");
+  $("#rows").innerHTML = Array.from({ length: NROWS }, (_, i) => `
+    <div class="comprow">
+      <label>Component ${i + 1}<select data-k="name">${opts}</select></label>
+      <label>Phase<select data-k="phase"><option>auto</option><option>liquid</option><option>solid</option><option>gas</option><option>dissolved</option></select></label>
+      <label>Amount<input data-k="amount" placeholder="${i ? "" : "0.6"}"></label>
+    </div>`).join("");
+  $("#basis").innerHTML = META.bases.map(b => `<option>${esc(b)}</option>`).join("");
+}
+
+function clearForm() {
+  $("#form").reset();
+  document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", "false"));
+}
+
+const BASIS_OF = { mass_fractions: "mass fractions", mole_fractions: "mole fractions", volume_fractions: "volume fractions", masses: "masses (kg)", moles: "moles (mol)" };
+function fillForm(inp) {
+  clearForm();
+  let names = [], phases = {}, amounts = {};
+  if (Array.isArray(inp.components)) names = inp.components.slice();
+  else if (inp.components) { names = Object.keys(inp.components); phases = inp.components; }
+  for (const [key, label] of Object.entries(BASIS_OF)) if (inp[key]) {
+    $("#basis").value = label; amounts = inp[key];
+    for (const n of Object.keys(inp[key])) if (!names.includes(n)) names.push(n);
+  }
+  const rows = document.querySelectorAll(".comprow");
+  names.slice(0, NROWS).forEach((n, i) => {
+    $('[data-k="name"]', rows[i]).value = n;
+    $('[data-k="phase"]', rows[i]).value = phases[n] || "auto";
+    $('[data-k="amount"]', rows[i]).value = amounts[n] ?? "";
+  });
+  let measured = false;
+  for (const el of $("#form").elements) {
+    if (!el.name || inp[el.name] == null) continue;
+    el.value = inp[el.name];
+    if (["total_mass", "Q", "W", "dH", "dS", "Cv", "process"].includes(el.name)) measured = true;
+  }
+  $("#measured").open = measured;
+}
+
+function readForm() {
+  const rows = [...document.querySelectorAll(".comprow")].map(r => ({
+    name: $('[data-k="name"]', r).value, phase: $('[data-k="phase"]', r).value, amount: $('[data-k="amount"]', r).value }));
+  const fields = {};
+  for (const el of $("#form").elements) if (el.name && el.value.trim() !== "") fields[el.name] = el.value.trim();
+  return { rows, basis: $("#basis").value, fields };
+}
+
+async function post(url, body) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
+}
+
+function pyInput(obj) {
+  return "engine.solve(" + JSON.stringify(obj, null, 1).replace(/\n\s*/g, " ").replace(/\bnull\b/g, "None") + ")";
+}
+
+function list(title, items, cls = "") {
+  if (!items || !items.length) return "";
+  return `<div class="box ${cls}"><h2>${title}</h2><ul class="msgs">${items.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>`;
+}
+
+function renderResult(d) {
+  const el = $("#result");
+  if (d.error) { el.innerHTML = `<h2>Result</h2>${list("The server could not answer", [d.error], "bad")}`; return; }
+  let h = "<h2>Result</h2>";
+  if (!d.success) {
+    h += `<div class="hero"><span class="big" style="font-size:28px">Cp could not be computed</span></div>`;
+    h += list("What is wrong", d.errors, "bad") + list("What would complete a route to Cp", d.missing);
+  } else {
+    h += `<div class="hero">
+      <span class="big">${d.cp_mass_J_per_kgK == null ? "–" : fmt(d.cp_mass_J_per_kgK)} <span class="unit">J/(kg K)</span></span>
+      <span class="second">${d.cp_molar_J_per_molK == null ? "molar basis needs a composition" : fmt(d.cp_molar_J_per_molK, 2) + " J/(mol K)"}</span></div>`;
+    const u = d.uncertainty, bits = [];
+    if (d.recommended_route) bits.push(esc(d.recommended_route));
+    if (u && u.relative_percent != null) bits.push(`expected deviation from measurements ± ${fmt(u.relative_percent, 1)} %`);
+    if (d.cv_mass != null) bits.push(`Cv ≈ ${fmt(d.cv_mass)} J/(kg K)`);
+    h += `<p class="sub">${bits.join(" · ")}</p>`;
+    if (d.classification) h += `<p class="sub"><b>System:</b> ${esc(d.classification)}</p>`;
+    h += list("Warnings", d.warnings, "warn");
+    const b = d.breakdown_mass;
+    if (b && b.total) {
+      const T = d.breakdown_T || [], where = d.breakdown_kind === "mean" ? `mean over ${fmt(T[1], 2)}–${fmt(T[2], 2)} K` : `at ${fmt(T[0], 2)} K`;
+      const row = (name, v, what) => `<tr><td>${name}<br><span class="hint">${what}</span></td><td class="n">${fmt(v)}</td>
+        <td class="n" style="width:34%">${fmt(100 * v / b.total, 1)} %<span class="share" style="width:${Math.max(0, Math.min(100, 100 * Math.abs(v) / Math.abs(b.total)))}%"></span></td></tr>`;
+      h += `<div><h2>Where the Cp comes from (${where})</h2><div class="tablewrap"><table>
+        <thead><tr><th>Part</th><th class="n">J/(kg K)</th><th class="n">Share</th></tr></thead><tbody>
+        ${row("Ideal", b.ideal, "Σ nᵢCpᵢ of the phases present (plus the gas residual)")}
+        ${row("Excess", b.excess, "non-ideal mixing, Cpᴱ")}
+        ${row("Latent", b.latent, "phase amounts changing with T")}
+        </tbody></table></div></div>`;
+    }
+    if (d.routes && d.routes.length > 1) {
+      h += `<div><h2>Routes that reached Cp</h2><div class="tablewrap"><table><thead><tr><th>Route</th><th class="n">J/(kg K)</th><th class="n">J/(mol K)</th></tr></thead><tbody>` +
+        d.routes.map(r => `<tr><td>${esc(r.label)}</td><td class="n">${fmt(r.cp_mass)}</td><td class="n">${fmt(r.cp_molar, 2)}</td></tr>`).join("") + "</tbody></table></div></div>";
+    }
+    const pa = d.phase_amounts;
+    if (pa && Object.keys(pa).length) {
+      let rows = "";
+      for (const [phase, comps] of Object.entries(pa)) for (const [c, w] of Object.entries(comps))
+        if (w > 1e-9) rows += `<tr><td>${esc(phase)}</td><td>${esc(c)}</td><td class="n">${fmt(100 * w, 2)} %</td></tr>`;
+      h += `<div><h2>Phases present</h2><div class="tablewrap"><table><thead><tr><th>Phase</th><th>Component</th><th class="n">Mass share of system</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    }
+    const ex = d.extras || {};
+    if (ex.vle) for (const [name, v] of Object.entries(ex.vle))
+      h += `<p class="sub"><b>Boiling range</b> (${esc(name)}): bubble point ${fmt(v.T_bubble_K - 273.15, 2)} °C, dew point ${fmt(v.T_dew_K - 273.15, 2)} °C.</p>`;
+    const pm = ex.partial_molar_cp_J_per_molK;
+    if (pm) for (const [phase, comps] of Object.entries(pm))
+      h += `<p class="sub"><b>Partial molar Cp</b> (${esc(phase)}): ${Object.entries(comps).map(([c, v]) => `${esc(c)} ${fmt(v, 2)}`).join(", ")} J/(mol K).</p>`;
+    h += list("Assumptions the engine made", d.assumptions) + list("Notes", d.notes);
+  }
+  if (d.derivation) h += `<details><summary>Derivation: the chain of relations used</summary><pre>${esc(d.derivation)}</pre></details>`;
+  h += `<details><summary>Full engine report</summary><pre>${esc(d.report || "")}</pre></details>`;
+  h += `<details><summary>The same calculation in Python</summary><pre>from cp_engine import CpEngine\nengine = CpEngine()\nprint(${esc(pyInput(d.input || {}))})</pre></details>`;
+  h += `<p class="hint">Computed in ${d.seconds} s.</p>`;
+  el.innerHTML = h;
+}
+
+async function compute() {
+  const btn = $("#go"); btn.disabled = true; $("#status").textContent = "Computing…";
+  try { renderResult(await post("/api/solve", readForm())); $("#status").textContent = ""; }
+  catch (e) { $("#status").textContent = "Could not reach the server: " + e.message; }
+  btn.disabled = false;
+}
+
+/* ---------- Cp(T) plot: one series, so no legend; crosshair + tooltip on hover ---------- */
+function niceTicks(lo, hi, n = 5) {
+  const span = hi - lo || Math.abs(hi) || 1, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0);
+  const t = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9 * span; v += step) t.push(v);
+  return t;
+}
+function drawPlot(pts) {
+  const W = 760, H = 320, m = { l: 74, r: 18, t: 14, b: 42 }, box = $("#plot");
+  const xs = pts.map(p => p.T - 273.15), ys = pts.map(p => p.cp / 1000);
+  let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const pad = (y1 - y0) * 0.08 || y1 * 0.05 || 1; y0 = Math.max(0, y0 - pad); y1 += pad;
+  const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
+  const yt = niceTicks(y0, y1), xt = niceTicks(x0, x1, 6), dy = yt.length > 1 && yt[1] - yt[0] < 1 ? 2 : (yt[1] - yt[0] < 10 ? 1 : 0);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cp in kJ per kg K against temperature in degrees Celsius">`;
+  for (const v of yt) s += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><g class="axis"><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, dy)}</text></g>`;
+  for (const v of xt) s += `<g class="axis"><text x="${X(v)}" y="${H - m.b + 18}" text-anchor="middle">${fmt(v, Math.abs(xt[1] - xt[0]) < 1 ? 1 : 0)}</text></g>`;
+  s += `<g class="axis"><text x="${(m.l + W - m.r) / 2}" y="${H - 6}" text-anchor="middle">Temperature, °C</text>
+        <text transform="translate(14 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle">Cp, kJ/(kg K)</text></g>`;
+  s += `<path class="line" d="${pts.map((p, i) => (i ? "L" : "M") + X(xs[i]).toFixed(1) + " " + Y(ys[i]).toFixed(1)).join(" ")}"/>`;
+  s += `<line class="cross" id="cx" y1="${m.t}" y2="${H - m.b}" style="display:none"/><circle class="dot" id="cd" r="5" style="display:none"/>`;
+  s += `<rect id="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg><div class="tip" id="tip"></div>`;
+  box.innerHTML = s;
+  const svg = $("svg", box), tip = $("#tip"), cx = $("#cx"), cd = $("#cd");
+  const move = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * W;
+    let k = 0, best = 1e9; xs.forEach((v, i) => { const d = Math.abs(X(v) - px); if (d < best) { best = d; k = i; } });
+    const p = pts[k], sx = X(xs[k]), sy = Y(ys[k]);
+    cx.setAttribute("x1", sx); cx.setAttribute("x2", sx); cx.style.display = ""; cd.setAttribute("cx", sx); cd.setAttribute("cy", sy); cd.style.display = "";
+    tip.innerHTML = `<b>${fmt(xs[k], 2)} °C</b> (${fmt(p.T, 2)} K)<br>Cp ${fmt(p.cp)} J/(kg K)` + (p.latent != null && p.cp ? `<br>latent part ${fmt(100 * p.latent / p.cp, 1)} %` : "");
+    tip.style.display = "block";
+    const left = sx / W * r.width, tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(r.width - tw, left + (left > r.width / 2 ? -tw - 12 : 12))) + "px";
+    tip.style.top = Math.max(0, sy / H * r.height - 44) + "px";
+  };
+  const hide = () => { tip.style.display = "none"; cx.style.display = "none"; cd.style.display = "none"; };
+  $("#hit", box).addEventListener("pointermove", move); $("#hit", box).addEventListener("pointerdown", move); $("#hit", box).addEventListener("pointerleave", hide);
+  $("#plottable").hidden = false;
+  $("#plottablebody").innerHTML = `<table><thead><tr><th class="n">T, °C</th><th class="n">T, K</th><th class="n">Cp, J/(kg K)</th><th class="n">ideal</th><th class="n">excess</th><th class="n">latent</th></tr></thead><tbody>` +
+    pts.map(p => `<tr><td class="n">${fmt(p.T - 273.15, 2)}</td><td class="n">${fmt(p.T, 2)}</td><td class="n">${fmt(p.cp)}</td><td class="n">${fmt(p.ideal)}</td><td class="n">${fmt(p.excess)}</td><td class="n">${fmt(p.latent)}</td></tr>`).join("") + "</tbody></table>";
+}
+async function plot() {
+  const btn = $("#plotbtn"), st = $("#plotstatus"); btn.disabled = true; st.textContent = "Computing 41 temperatures… (a boiling mixture takes up to half a minute)";
+  try {
+    const d = await post("/api/curve", { ...readForm(), T1: $("#c1").value, T2: $("#c2").value });
+    if (d.error) st.textContent = d.error;
+    else if (!d.points.length) st.textContent = "No temperature in this range could be computed: " + (d.first_error || "");
+    else { drawPlot(d.points); st.textContent = d.failed ? `${d.failed} temperature(s) could not be computed and are left out: ${d.first_error}` : ""; }
+  } catch (e) { st.textContent = "Could not reach the server: " + e.message; }
+  btn.disabled = false;
+}
+
+async function init() {
+  META = await (await fetch("/api/meta")).json();
+  buildRows();
+  $("#presets").innerHTML = META.presets.map(p => `<button type="button" class="chip" data-id="${esc(p.id)}" aria-pressed="false">${esc(p.label)}</button>`).join("");
+  $("#presets").addEventListener("click", ev => {
+    const b = ev.target.closest(".chip"); if (!b) return;
+    const p = META.presets.find(q => q.id === b.dataset.id);
+    fillForm(p.input); b.setAttribute("aria-pressed", "true");
+    $("#concept").innerHTML = `<b>Course concept:</b> ${esc(p.concept)}`;
+    $("#c1").value = p.curve ? p.curve.T1 : ""; $("#c2").value = p.curve ? p.curve.T2 : "";
+    compute();
+  });
+  $("#form").addEventListener("submit", ev => { ev.preventDefault(); compute(); });
+  $("#clear").addEventListener("click", clearForm);
+  $("#plotbtn").addEventListener("click", plot);
+  const start = $(`.chip[data-id="${CSS.escape(location.hash.slice(1))}"]`);   // e.g. /#slurry opens that example
+  if (start) { start.click(); if (location.search.includes("plot")) plot(); }
+}
+init();
+</script>
+</body>
+</html>
