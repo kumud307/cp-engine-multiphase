@@ -25,7 +25,7 @@ Every result reports:
 python -m venv .venv
 .venv\Scripts\activate            # Windows   (Linux/macOS: source .venv/bin/activate)
 pip install -e .[dev]             # numpy, scipy, pandas, matplotlib (+ pytest, sympy, ipywidgets, nbclient)
-pytest                            # 147 tests
+pytest                            # 201 tests
 ```
 
 **Google Colab:** open the notebook directly from GitHub:
@@ -106,6 +106,8 @@ engine.solve({"T": "25 C", "components": ["water"], "pure_cp": {"water": "4.18 k
 
 Interactive use: `from cp_engine.interactive import form; form()` in Jupyter, or `python -m cp_engine` in a terminal.
 
+Quick demonstration: `python pitch_demo.py` runs seven short cases (about 5 s) and names the course concept behind each.
+
 ## Adding a new component (data only, no code)
 
 Add an entry to `data/components.json` (every value needs a `source`; mark uncertain values `"verify": true`).
@@ -143,7 +145,7 @@ cp_engine/          units, database, inputs (normaliser), validator, rules, solv
   plotting.py, interactive.py
 data/               components.json, binary_nrtl.json, model_uncertainty.json
 validation/         case1 … case6 scripts, run_all.py, data/ (NIST, ThermoML, nanofluid and freezing-point data), results/
-tests/              pytest suite (196 tests, incl. regression tests against literature data)
+tests/              pytest suite (201 tests, incl. regression tests against literature data)
 notebooks/          CP_Engine_Demo.ipynb (+ build_notebook.py that generates it)
 docs/               TEAM_HANDBOOK.md (start here: demo script + defence Q&A), DATA_SOURCES.md, DATA_TO_VERIFY.md,
                     flowchart.md (professor format), flowchart_detailed.md, WORK_BREAKDOWN.md

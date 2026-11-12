@@ -17,6 +17,8 @@ Algorithm (forward chaining)
 """
 from __future__ import annotations
 
+import re
+
 import itertools
 import textwrap
 from dataclasses import dataclass, field
@@ -558,10 +560,69 @@ class CpEngine:
             log.warn(msg)
         for rule, msg in s.failures:
             (res.errors if not res.success else res.warnings).append(f"Rule '{rule}' could not be applied: {msg}")
-        res.warnings += log.warnings
+        res.warnings += _consolidate(log.warnings)
+        _check_sign(res)
         res.assumptions, res.notes = list(log.assumptions), list(log.notes)
         res.knowledge = {k: f.value for k, f in kb.items() if not hasattr(f.value, "classification")}
         return res
+
+
+_RANGE_RE = re.compile(r"^(?P<what>.+): T = (?P<T>-?[\d.]+) K is outside the correlation range "
+                       r"(?P<rng>\[[^\]]+\] K) \(extrapolating by (?P<d>[\d.]+) K\)\.$")
+_SMOOTH_RE = re.compile(r"^T = (?P<T>-?[\d.]+) K lies inside the smoothed phase-change range of (?P<rest>.+)$", re.S)
+
+
+def _consolidate(warnings: list[str]) -> list[str]:
+    """A mean over [T1, T2] evaluates the properties at many temperatures, and each evaluation outside a
+    correlation range (or inside a smoothed melting step) logs its own line. Report each such condition once,
+    with the largest extrapolation, so that the report stays readable."""
+    out: list[str] = []
+    ranges: dict[tuple[str, str], list] = {}          # (what, range) -> [index in out, max distance, T at max, count]
+    smooth: dict[str, list] = {}                      # text after the temperature -> [index in out, count]
+    for w in warnings:
+        m = _RANGE_RE.match(w)
+        if m:
+            key, d = (m["what"], m["rng"]), float(m["d"])
+            if key not in ranges:
+                ranges[key] = [len(out), d, m["T"], 1]
+                out.append(w)
+            else:
+                rec = ranges[key]
+                rec[3] += 1
+                if d > rec[1]:
+                    rec[1], rec[2] = d, m["T"]
+            continue
+        m = _SMOOTH_RE.match(w)
+        if m:
+            key = re.sub(r"mean Cp over \[[^\]]+\] K = [\d,]+ J/\(kg K\)", "", m["rest"])
+            if key not in smooth:
+                smooth[key] = [len(out), 1]
+                out.append(w)
+            else:
+                smooth[key][1] += 1
+            continue
+        if w not in out:
+            out.append(w)
+    for (what, rng), (i, d, T, n) in ranges.items():
+        if n > 1:
+            out[i] = (f"{what}: outside the correlation range {rng} at {n} of the temperatures evaluated "
+                      f"(largest extrapolation {d:.1f} K, at T = {T} K).")
+    for i, n in smooth.values():
+        if n > 1:
+            out[i] += f" (The same applies at {n - 1} other temperature(s) evaluated in this calculation.)"
+    return out
+
+
+def _check_sign(res: "CpResult") -> None:
+    """Thermal stability requires Cp > 0. A zero or negative value means the inputs contradict each other
+    (usually the sign of Q, W, ΔH or ΔS against the sign of ΔT)."""
+    for label, value in (("mass", res.cp_mass), ("molar", res.cp_molar)):
+        if value is not None and value <= 0:
+            res.warnings.insert(0, f"Cp ({label} basis) = {value:,.4g} is not positive. Thermal stability requires "
+                                   "Cp > 0, so the inputs are inconsistent: check the sign of Q, W, ΔH or ΔS against "
+                                   "the direction of the temperature change (Q > 0 = heat added to the system, "
+                                   "W > 0 = work done on the system; heating needs T2 > T1).")
+            return
 
 
 def solve(inputs: dict | SystemInput, raise_errors: bool = False) -> CpResult:

@@ -1,0 +1,426 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,array,longtable}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.4em}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\where}[1]{\par\noindent\textbf{In the code:} #1\par}
+\newcommand{\num}[1]{\par\noindent\textbf{Worked number (from the engine):} #1\par}
+\newcommand{\ask}[1]{\par\noindent\textbf{Likely question:} \emph{#1}\par}
+\newcommand{\notused}[1]{\par\noindent\textcolor{gray}{\textbf{Not used:} #1}\par}
+
+\title{Course concepts in the Cp engine:\\ theory, derivations and where each is used}
+\author{CL 202 Chemical Engineering Thermodynamics, Topic 5 (Specific heats of multiphase fluids)\\
+TODO: group members}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\noindent
+This report maps the material of the four lecture sets (\emph{Ch.~1 Definitions and basics},
+\emph{Ch.~4 Property relationships for mixtures}, \emph{Equations of state for pure fluids},
+\emph{Equations of state for mixtures}) to the Cp engine. For every concept it gives the result, the
+derivation that can be asked on the board, the place in the code, and a number produced by the engine.
+Concepts from the lectures that the engine does \emph{not} use are stated as such. All numbers were
+computed with the engine (repository \code{cp-engine-multiphase}); slide numbers refer to the lecture PDFs.
+
+\tableofcontents
+\bigskip
+
+\noindent\textbf{One idea runs through everything.} The engine never averages heat capacities directly.
+It builds the enthalpy $H(T)$ of the whole system as a state function and differentiates it:
+\begin{equation}
+C_{p,\mathrm{app}} = \left(\frac{\partial H}{\partial T}\right)_{P,\,n_{\mathrm{total}}},\qquad
+H=\sum_{\text{phases }p}\sum_i n_i^p H_i^p(T,P)+\sum_{\text{liquid }p} n^p H^{E,p}(T,\mathbf{x}^p)+H^R_{\text{gas}}.
+\label{eq:main}
+\end{equation}
+Every lecture concept below enters through one of the terms of this equation or through the phase
+amounts $n_i^p(T)$.
+
+%=====================================================================================================
+\section{Ch.~1: Definitions and basics}
+
+\subsection{System, boundary, process type (slides 2--3)}
+The user's description of the process is a statement about the boundary: \emph{adiabatic} (no heat
+interaction), \emph{rigid} (constant volume), or movable at constant pressure. The engine turns these into
+rules.
+\where{\code{cp\_engine/rules.py} (rules \code{adiabatic\_no\_heat}, \code{first\_law\_constant\_P},
+\code{first\_law\_constant\_V}); input key \code{process}.}
+
+\subsection{Postulate I: $n+2$ properties fix the state (slide 7)}
+For a closed simple system of $n$ components the stable equilibrium state is fixed by two independent
+intensive properties plus the $n$ amounts. Route~A (the property route) therefore needs $T$, $P$ and the
+composition; if one is missing, the solver's backward search lists which inputs would complete a route.
+\where{\code{solver.py}, \code{Solver.missing\_suggestions}; Route~A rule in \code{rules.py}.}
+\ask{Why does your engine refuse to give $C_p$ from a composition alone? (Postulate I: one more intensive
+property, $T$, is needed; $P$ defaults to 1~atm and the engine says so.)}
+
+\subsection{Postulate II, equilibrium states and quasi-static paths (slides 6, 8, 9)}
+Derived properties ($U$, $H$, $S$) exist only for stable equilibrium states. The engine assumes that at
+every temperature the system is in its stable equilibrium state, i.e.\ heating is quasi-static: the phase
+amounts $n_i^p(T)$ are always the equilibrium amounts. Consequence: the apparent heat capacity is an
+\emph{equilibrium} property. Supercooling (a PCM droplet that stays liquid below $T_m$) is a non-equilibrium
+state and is not described.
+\ask{Is your apparent Cp what a DSC measures on cooling? (On slow heating, approximately yes; on cooling, a
+supercooled emulsion is not in equilibrium, so no.)}
+
+\subsection{First law for a closed system (slides 19, 21) $\Rightarrow$ Route~B}
+From $dE=\delta Q+\delta W$ with $E=U$ (no kinetic or potential energy):
+\[
+\Delta U = Q + W_s + W_{pv},\qquad W_{pv}=-\int P\,dV .
+\]
+At constant volume $W_{pv}=0$, so $\Delta U=Q+W_s$. At constant pressure $W_{pv}=-P\Delta V$ and, with
+$H=U+PV$,
+\[
+\Delta H=\Delta U+P\Delta V = Q+W_s \qquad(\text{constant }P).
+\]
+Then the mean heat capacities are $\bar c_p=\Delta H/(m\Delta T)$ and $\bar c_V=\Delta U/(m\Delta T)$.
+Sign convention as in the lectures: $Q>0$ is heat added to the system, $W>0$ is work done on it.
+\where{\code{rules.py}: \code{\_dH\_constP}, \code{\_dU\_constV}, \code{cp\_from\_dH}.}
+\num{$Q=83.7$~kJ heats 2~kg of water from 20 to 30~$^\circ$C at constant $P$, $W_s=0$:
+$\bar c_p=83\,700/(2\times10)=4185$~J\,kg$^{-1}$K$^{-1}$; the engine returns 4185.0, and its own
+property route gives 4184.8 (the two routes are compared automatically).}
+\ask{If the stirrer does 5~kJ of work, what changes? ($\Delta H=Q+W_s$; the engine adds $W$.)}
+
+\subsection{Heat capacity from entropy (slides 33--35) $\Rightarrow$ Route~C}
+At constant $P$, $\delta Q_\mathrm{rev}=dH=C_p\,dT$ and $dS=\delta Q_\mathrm{rev}/T$, so
+\[
+C_p=T\left(\frac{\partial S}{\partial T}\right)_P ,\qquad
+\Delta S=\int_{T_1}^{T_2}\frac{m\,c_p}{T}\,dT \;\overset{c_p\ \text{const}}{=}\; m\,c_p\ln\frac{T_2}{T_1}
+\;\Rightarrow\; c_p=\frac{\Delta S}{m\ln(T_2/T_1)} .
+\]
+Because $S$ is a state function, $\Delta S$ between the two equilibrium states does not depend on whether
+the actual heating was reversible; the formula needs only constant $P$ and an (approximately) constant
+$c_p$.
+\where{\code{rules.py}: \code{cp\_from\_dS}.}
+\num{For 2~kg of water, 20$\to$30~$^\circ$C, $\Delta S=\int m c_p/T\,dT=280.74$~J/K; the entropy route
+returns $c_p=4184.8$~J\,kg$^{-1}$K$^{-1}$.}
+
+\subsection{$C_p-C_V$ (exact relation used by the $C_V$ route)}
+With $dS=(C_V/T)dT+(\partial P/\partial T)_V dV$ (Maxwell relation $(\partial S/\partial V)_T=(\partial
+P/\partial T)_V$), differentiating at constant $P$ and using the triple product rule
+$(\partial P/\partial T)_V=\alpha/\kappa_T$:
+\[
+C_p-C_V=T\left(\frac{\partial P}{\partial T}\right)_V\left(\frac{\partial V}{\partial T}\right)_P
+=\frac{T\,V\,\alpha^2}{\kappa_T},\qquad
+\alpha=\frac1V\Big(\frac{\partial V}{\partial T}\Big)_P,\ \kappa_T=-\frac1V\Big(\frac{\partial V}{\partial P}\Big)_T .
+\]
+\where{\code{models/cv\_cp.py}; rule \code{cp\_from\_cv}.}
+\num{Water at 25~$^\circ$C: $c_p=4184.5$, $c_V=c_p-Tv\alpha^2/\kappa_T=4141.1$~J\,kg$^{-1}$K$^{-1}$.
+Validated against NIST $c_V$: 0.02\,\% AARD.}
+
+\subsection{Thermodynamic temperature (slides 29--30)}
+All temperatures are converted to kelvin on input; temperature \emph{differences} are not offset
+(\code{units.py}).
+\notused{heat engines, Carnot efficiency and the theorem of Clausius are not used directly; only their
+consequence, the entropy as a state function, is. The open-system first law (slides 22--24) is not
+implemented as a separate route; for a steady-flow calorimeter $\dot Q=\dot m\,\Delta h$ gives the same
+$\bar c_p=\Delta h/\Delta T$ per unit mass.}
+
+%=====================================================================================================
+\section{Ch.~4: Property relationships for mixtures}
+
+\subsection{Partial molar properties and Euler's theorem (slides 2--9)}
+For an extensive property $\underline{B}(T,P,N_1,\dots,N_n)$, homogeneous of degree one in the $N_i$,
+Euler's theorem gives
+\[
+\underline B=\sum_i N_i\bar B_i,\qquad \bar B_i=\left(\frac{\partial\underline B}{\partial N_i}\right)_{T,P,N_{j\neq i}},
+\qquad B=\sum_i x_i\bar B_i .
+\]
+\emph{Proof (board):} $\underline B(\lambda N)=\lambda\underline B(N)$; differentiate with respect to
+$\lambda$ and set $\lambda=1$: $\sum_i N_i\,\partial\underline B/\partial N_i=\underline B$.
+
+From the molar property $B(x)$, eliminating $x_i$:
+\[
+\bar B_k=B+\left(\frac{\partial B}{\partial x_k}\right)_{T,P,x[k,i]}-\sum_{j\neq i}x_j\left(\frac{\partial
+B}{\partial x_j}\right)_{T,P,x[j,i]} \qquad(\text{slide 8}).
+\]
+Applied to $C_p=T(\partial S/\partial T)_P$: $\bar C_{p,i}=T(\partial\bar S_i/\partial T)_{P,N}$
+(slide~5), which the engine evaluates as $\bar C_{p,i}=C_{p,i}^{\text{pure}}+\bar C_{p,i}^{E}$.
+\where{\code{models/partial\_molar.py}: \code{partial\_molar} (differentiates $N\,B(N/\sum N)$ with respect
+to $N_i$) and \code{partial\_molar\_from\_x} (the slide-8 formula); both are coded and agree.
+Every liquid-solution result reports \code{breakdown.extras["partial\_molar\_cp\_J\_per\_molK"]}.}
+\num{Ethanol (0.3) + water (0.7) at 25~$^\circ$C: $\bar C_{p,\mathrm{water}}=90.22$,
+$\bar C_{p,\mathrm{ethanol}}=138.85$~J\,mol$^{-1}$K$^{-1}$;
+$0.3\times138.85+0.7\times90.22=104.81=C_p$ of the mixture (Euler).}
+
+\subsection{Gibbs--Duhem (slides 10--11)}
+Subtracting $d\underline B=\sum\bar B_i dN_i+\sum N_i d\bar B_i$ from the Gibbs equation for $d\underline B$:
+\[
+\sum_i N_i\,d\bar B_i=\Big(\frac{\partial\underline B}{\partial T}\Big)_{P,N}dT+\Big(\frac{\partial\underline
+B}{\partial P}\Big)_{T,N}dP
+\;\Rightarrow\;\sum_i x_i\Big(\frac{\partial\bar B_i}{\partial x_j}\Big)_{T,P}=0 .
+\]
+\where{\code{partial\_molar.gibbs\_duhem\_residual}; test in \code{tests/test\_eos\_vle.py}.}
+\num{For the NRTL activity coefficients of ethanol + water, $\sum_i x_i\,\partial\ln\gamma_i/\partial x_1
+=1.4\times10^{-11}$, i.e.\ zero: the model is thermodynamically consistent.}
+
+\subsection{Mixing functions and the ideal solution (slides 13--18)}
+With pure components at the same $T,P$ as reference states, the ideal solution has
+\[
+\Delta G^{ID}_{mix}=RT\sum x_i\ln x_i,\quad \Delta S^{ID}_{mix}=-R\sum x_i\ln x_i,\quad
+\Delta H^{ID}_{mix}=0,\quad \Delta V^{ID}_{mix}=0 .
+\]
+Since $\Delta H_{mix}^{ID}=0$ at every $T$, its temperature derivative is zero too, so the ideal-solution
+heat capacity is simply
+\[
+C_p^{ID}=\sum_i x_iC_{p,i}\quad(\text{molar basis}) \;\Longleftrightarrow\; c_p^{ID}=\sum_i w_ic_{p,i}\quad(\text{mass basis}).
+\]
+For a suspension the same argument over phases (no mixing between phases) gives mass weighting,
+$c_p=\sum_p w_pc_{p,p}$; weighting by volume fraction (``Model~I'') is dimensionally inconsistent.
+\where{\code{models/ideal.py}; \code{partial\_molar.mixing\_functions} (reported for every liquid solution);
+\code{models/heterogeneous.py}.}
+\num{Ethanol (0.3) + water (0.7), 25~$^\circ$C: $\Delta S^{ID}_{mix}=5.079$~J\,mol$^{-1}$K$^{-1}$,
+$\Delta G_{mix}=-1360$~J/mol, $\Delta H_{mix}=-717$~J/mol, $\Delta S_{mix}=2.16$~J\,mol$^{-1}$K$^{-1}$
+(smaller than ideal: the excess entropy is negative). Ideal $C_p=86.47$, real $C_p=104.81$~J\,mol$^{-1}$K$^{-1}$.}
+
+\subsection{Excess functions, activity coefficients and Gibbs--Helmholtz (slides 24--33)}
+$B^{EX}=B-B^{ID}$ at the same $T,P,x$, and $RT\ln\gamma_i=\bar G_i^{EX}=(\partial\,\underline{G}^{EX}/\partial
+N_i)_{T,P,N_j}$. From $G=H-TS$ and $(\partial G/\partial T)_P=-S$ follows the Gibbs--Helmholtz equation,
+\[
+\left(\frac{\partial (G^{E}/RT)}{\partial T}\right)_{P,x}=-\frac{H^{E}}{RT^2}
+\;\Rightarrow\;
+H^E=-RT^2\frac{\partial g}{\partial T},\qquad
+C_p^E=\left(\frac{\partial H^E}{\partial T}\right)_{P,x}=-R\left(2T\frac{\partial g}{\partial T}+T^2\frac{\partial^2
+g}{\partial T^2}\right),
+\]
+with $g=G^E/RT$, and in partial molar form (slide~33) $(\partial\ln\gamma_i/\partial T)_{P,x}=-\bar H_i^{E}/RT^2$.
+The mixture heat capacity is then $C_p=\sum x_iC_{p,i}+C_p^E$.
+
+The lectures use the one-parameter Margules model $G^E/RT=C\,x_1x_2$ (slide 31) as the example. The engine
+uses NRTL (Renon and Prausnitz, 1968), which is multicomponent and has temperature-dependent parameters,
+\[
+\frac{G^E}{RT}=\sum_i x_i\frac{\sum_j\tau_{ji}G_{ji}x_j}{\sum_k G_{ki}x_k},\qquad G_{ij}=\exp(-\alpha_{ij}\tau_{ij}),
+\quad \tau_{ij}=a_{ij}+\frac{b_{ij}}T+e_{ij}\ln T .
+\]
+The temperature dependence matters: $C_p^E$ is a \emph{second} temperature derivative of $G^E$. Parameters
+fitted to vapour--liquid equilibrium fix $G^E$ but not its temperature derivatives and give $C_p^E$
+six or more times too small; the engine therefore uses parameters fitted to measured $H^E$.
+\where{\code{models/nrtl.py}: \code{gE\_RT}, \code{ln\_gamma}, \code{hE}, \code{cpE} (central differences,
+$h=10^{-4}T$); \code{partial\_molar.ln\_gamma\_from\_gE}, \code{partial\_molar\_hE}.}
+\num{Ethanol (0.3) + water (0.7), 298.15~K: $H^E=-717$~J/mol, $C_p^E=+18.3$~J\,mol$^{-1}$K$^{-1}$.
+$\ln\gamma$ from differentiating $N G^E$: $(-0.04701,\ 0.10913)$; analytic NRTL: $(-0.04701,\ 0.10913)$.
+$\bar H^E_i$ from $-RT^2\partial\ln\gamma_i/\partial T$: $(-154,\ -958)$~J/mol, and
+$0.3(-154)+0.7(-958)=-717=H^E$.}
+
+\subsection{Fugacity, Lewis--Randall and Henry's law (slides 19--29)}
+$\mu_i=RT\ln\hat f_i+\lambda_i(T)$; $\hat\phi_i=\hat f_i/(y_iP)$ for a gas; $\gamma_i=\hat f_i/(x_if_i)$ with
+the pure liquid as reference (Lewis--Randall). These are used in the vapour--liquid equilibrium
+(section~\ref{sec:vle}). The infinite-dilution activity coefficient $\gamma_i^\infty$ (the Henry's-law
+reference, slides 28--29) is used to \emph{test} the NRTL parameters against independent measurements.
+\where{\code{models/vle.py}; validation case~2 ($\gamma^\infty$ of ethanol and acetone in water).}
+
+\subsection{Two class problems solved with the same relations}
+\paragraph{Problem 9.13 (slide 35).} $RT\ln\gamma_B=(3800-8T)(1-x_B)^2$ is the two-suffix Margules form, so
+$G^E=(3800-8T)\,x_Bx_C$ (J/mol). Then $S^E=-\partial G^E/\partial T=8x_Bx_C$ and
+$H^E=G^E+TS^E=3800\,x_Bx_C$. Adding 1~mol benzene to 2~mol of solution with 80\,\% cyclohexane
+(0.4~mol B, 1.6~mol C $\to$ 1.4~mol B, 1.6~mol C), isothermal at 300~K:
+\[
+\Delta H=3800\Big(\tfrac{1.4\times1.6}{3}-\tfrac{0.4\times1.6}{2}\Big)=1621.3\ \mathrm J,\qquad
+\Delta S=\big[-R\textstyle\sum n_i\ln x_i+\underline S^E\big]_{\text{final}}-\big[\cdots\big]_{\text{initial}}=12.33\ \mathrm{J/K}.
+\]
+\paragraph{Problem 9.24 (slide 36).} With $\Delta\underline H=[100N_1N_2+50(N_1N_3+N_2N_3)]/(N_1+2N_2+0.5N_3)$
+(homogeneous of degree one), at $x_1=0.2$, $x_2=0.5$:
+\[
+\overline{\Delta H}_2=\frac{(100x_1+50x_3)D-2\,N}{D^2}=\frac{35\times1.35-2\times20.5}{1.35^2}=3.429\ \mathrm{J/mol},
+\]
+with $N=20.5$, $D=1.35$. The engine's \code{partial\_molar} and the slide-8 formula both give 3.4294.
+For part (b), mixing equal amounts of $(\tfrac13,\tfrac23,0)$ and $(\tfrac13,0,\tfrac23)$ to the equimolar
+ternary at steady state: $Q=\Delta H=19.048-\tfrac12(13.333+16.667)=+4.05$~J per mol of product (with
+exact thirds), i.e.\ heat must be \emph{supplied}: the ``cooling load'' is $-4.05$~J/mol.
+
+%=====================================================================================================
+\section{Equations of state for pure fluids}
+
+\subsection{Why an equation of state is needed for $C_p$}
+The database gives ideal-gas heat capacities $C_p^{ig}(T)$. A real gas at pressure differs by the
+departure (residual) function. From $dH=T\,dS+V\,dP$ and the Maxwell relation $(\partial S/\partial P)_T=-(\partial
+V/\partial T)_P$:
+\[
+\left(\frac{\partial H}{\partial P}\right)_T=V-T\left(\frac{\partial V}{\partial T}\right)_P,\qquad
+\left(\frac{\partial C_p}{\partial P}\right)_T=-T\left(\frac{\partial^2V}{\partial T^2}\right)_P .
+\]
+Integrating from $P=0$ (ideal gas) at constant $T$ gives the departure functions
+$H^R=\int_0^P[V-T(\partial V/\partial T)_P]\,dP$ and $C_p=C_p^{ig}+C_p^R$, $C_p^R=(\partial H^R/\partial T)_P$.
+For an ideal gas $V=RT/P$ and every residual is zero. For liquids the engine applies the same relation with the
+Tait equation for $V(T,P)$ (a liquid correlation, not in the slides): water at 500~bar gives 4056
+(NIST 4060)~J\,kg$^{-1}$K$^{-1}$.
+\where{\code{models/eos.py} (gases); \code{database.py}: \code{cp\_pressure\_correction} (liquids, integral by
+8-point Gauss--Legendre quadrature).}
+
+\subsection{Virial equation (slides 5--8)}
+Truncated pressure series $Z=1+BP/RT$, i.e.\ $V=RT/P+B(T)$. Then $V-T(\partial V/\partial T)_P=B-TB'$ does not
+depend on $P$, so
+\[
+H^R=P\,(B-TB'),\qquad C_p^R=\Big(\frac{\partial H^R}{\partial T}\Big)_P=P(B'-B'-TB'')=-T\,P\,\frac{d^2B}{dT^2},
+\qquad \ln\phi=\frac{BP}{RT}.
+\]
+$B$ from the Pitzer/Abbott correlation, $BP_c/RT_c=B^0+\omega B^1$, $B^0=0.083-0.422/T_r^{1.6}$,
+$B^1=0.139-0.172/T_r^{4.2}$; the derivatives $dB^0/dT_r=0.6752\,T_r^{-2.6}$ etc.\ are coded analytically.
+\where{\code{eos.py}: \code{VirialEOS.\_B}, \code{H\_residual}, \code{Cp\_residual}.}
+\num{CO$_2$ at 350~K (slide 30 constants): $B=-83.73$~cm$^3$/mol (slide: $-83.73$).}
+
+\subsection{Generic cubic equation (slides 11--17)}
+\[
+P=\frac{RT}{V-b}-\frac{a(T)}{(V+\varepsilon b)(V+\sigma b)},\quad a=\Omega_a\frac{R^2T_c^2}{P_c}\alpha(T_r,\omega),\quad
+b=\Omega_b\frac{RT_c}{P_c},
+\]
+with the $(\varepsilon,\sigma,\Omega_a,\Omega_b)$ of van der Waals, RK, SRK and PR from slide~16. The cubic in
+$Z$ is solved for its real roots; the largest is the vapour, the smallest the liquid, the middle one is
+discarded ($(\partial P/\partial V)_T>0$, slide~17). With $\beta=bP/RT$, $q=a/(bRT)$ and
+$I=\ln[(Z+\sigma\beta)/(Z+\varepsilon\beta)]/(\sigma-\varepsilon)$:
+\[
+\ln\phi=Z-1-\ln(Z-\beta)-qI,\qquad \frac{H^R}{RT}=Z-1+\Big(\frac{d\ln a}{d\ln T}-1\Big)qI .
+\]
+The vapour pressure follows from equal fugacities, $\phi^L=\phi^V$ (iterated $P\leftarrow
+P\,\phi^L/\phi^V$).
+\where{\code{eos.py}: \code{CubicEOS.Z\_roots}, \code{ln\_phi}, \code{H\_residual}, \code{psat}.}
+\num{CO$_2$ at 280~K, $P^\mathrm{sat}$ (bar) / $V^L$ (cm$^3$/mol): vdW 52.55 / 81.14, RK 45.61 / 61.03,
+SRK 41.98 / 58.42, PR 41.60 / 51.68; slide 33: 52.55 / 81.13, 45.62 / 61.03, 41.99 / 58.42, 41.60 / 51.68
+(agreement within rounding). On our own five liquids (NIST data, $0.55\le T_r\le0.95$) the vapour-pressure
+error is 224\,\% (vdW), 58\,\% (RK), 2.3\,\% (SRK), 1.4\,\% (PR): Soave's idea of fitting $\alpha(T)$ to
+vapour pressures (slide 14), seen on real data.}
+
+\subsection{Acentric factor and corresponding states (slides 2, 8)}
+$\omega=-1-\log_{10}[P^\mathrm{sat}(T_r=0.7)/P_c]$. The engine computes $\omega$ from this definition with NIST
+saturation data and takes $T_c$, $P_c$ from the NIST reference equations of state:
+water 0.3443, methanol 0.5647, ethanol 0.6429, $n$-hexane 0.3003, toluene 0.2657.
+\where{\code{tools/fit\_vapour\_pressure.py}; \code{data/components.json} (\code{critical}).}
+
+\subsection{Real-gas heat capacity: worked example}
+\num{Superheated steam, 500~$^\circ$C, 100~bar: ideal gas 2131, virial 2469, Peng--Robinson 2496,
+NIST 2583~J\,kg$^{-1}$K$^{-1}$. PR departure: $H^R=-2317$~J/mol, $C_p^R=+6.58$~J\,mol$^{-1}$K$^{-1}$.
+Over 189 NIST points (4 vapours, 0.5--10~MPa) the error falls from 12.1\,\% (ideal gas) to 5.3\,\% (PR).}
+\notused{the multiparameter and SAFT equations (slides 21--29) are not implemented; the NIST reference data
+used for validation are themselves generated by multiparameter reference equations.}
+
+%=====================================================================================================
+\section{Equations of state for mixtures}
+
+\subsection{Mixing and combining rules (slides 4, 7, 9, 11)}
+Virial: $B_{mix}=\sum_i\sum_jy_iy_jB_{ij}$ (exact), with the cross coefficient from the Prausnitz combining
+rules $T_{c,ij}=\sqrt{T_{c,i}T_{c,j}}(1-k_{ij})$, $V_{c,ij}=[(V_{c,i}^{1/3}+V_{c,j}^{1/3})/2]^3$,
+$Z_{c,ij}=(Z_{c,i}+Z_{c,j})/2$, $\omega_{ij}=(\omega_i+\omega_j)/2$, $P_{c,ij}=Z_{c,ij}RT_{c,ij}/V_{c,ij}$.
+Cubic: $a=\sum\sum x_ix_j\sqrt{a_ia_j}(1-k_{ij})$, $b=\sum x_ib_i$ (van der Waals one-fluid rules).
+\num{Equimolar CO$_2$ + CH$_4$ at 350~K: $B_{12}=-46.98$~cm$^3$/mol (slide 23: $-47.0$); $Z$ at 20~bar:
+virial 0.9650, PR ($k_{12}=0$) 0.9569, PR ($k_{12}=0.10$) 0.9600 (slide 24: 0.9650, 0.9569, 0.9600).}
+
+\subsection{Fugacity coefficients in a mixture (slides 5, 8, 12)}
+Virial: $\ln\hat\phi_i=\frac{P}{RT}\big(2\sum_jy_jB_{ij}-B_{mix}\big)$; $\delta_{12}=0$ gives the
+Lewis--Randall rule. Cubic: $\ln\hat\phi_i=\frac{b_i}{b}(Z-1)-\ln(Z-\beta)-\bar q_iI$,
+$\bar q_i=q\,(2\sum_jx_ja_{ij}/a-b_i/b)$; for PR ($\sigma-\varepsilon=2\sqrt2$, $q=A/B$) this is exactly the
+expression on slide~12.
+\num{$\hat\phi_{\mathrm{CO_2}}$ at 350~K, 20~bar, equimolar (virial): 0.947 (slide 24: 0.947).}
+
+\subsection{Phase equilibrium from one equation: bubble pressure (slides 13, 25--27)}
+$x_i\hat\phi_i^L=y_i\hat\phi_i^V$, $K_i=\hat\phi_i^L/\hat\phi_i^V$; start from Wilson $K$-values, update
+$y_i=K_ix_i$, scale $P$ by $\sum K_ix_i$ until $\sum y_i=1$.
+\where{\code{eos.py}: \code{CubicEOS.bubble\_P}.}
+\num{CO$_2$ + CH$_4$, 273.15~K, 6.375~MPa: liquid CH$_4$ fraction 0.186 with $k_{12}=0$ (slide 26: 18.6\,\%)
+and 0.128 with $k_{12}=0.10$ (measured: 12.5\,\%). The parameter that moved $Z$ by 0.3\,\% moves the liquid
+composition by about 50\,\%.}
+
+\subsection{Liquid mixtures that boil: the $\gamma$--$\phi$ approach}\label{sec:vle}
+For water + alcohols no constant $k_{ij}$ fits both phases (slide~15), so the engine uses a liquid-solution
+model for the liquid and the equation of state only for the vapour. Equal fugacities with the
+Lewis--Randall reference for the liquid:
+\[
+y_i\hat\phi_iP=x_i\gamma_i\,\phi_i^{sat}P_i^{sat}\qquad\Rightarrow\qquad
+K_i=\frac{y_i}{x_i}=\frac{\gamma_iP_i^{sat}\phi_i^{sat}}{\hat\phi_iP}\quad(\text{Poynting factor}\approx1),
+\]
+with $\gamma_i$ from NRTL, $P_i^{sat}$ from Antoine equations and $\hat\phi_i$, $\phi_i^{sat}$ from the same
+Peng--Robinson equation that gives the vapour's $H^R$. Bubble point: $\sum K_ix_i=1$; dew point:
+$\sum y_i/K_i=1$. Between them, the isothermal flash: from the material balance $z_i=(1-V)x_i+Vy_i$ and
+$y_i=K_ix_i$,
+\[
+x_i=\frac{z_i}{1+V(K_i-1)},\qquad
+f(V)=\sum_i\frac{z_i(K_i-1)}{1+V(K_i-1)}=0 \quad(\text{Rachford--Rice}),
+\]
+and $f'(V)=-\sum z_i(K_i-1)^2/[1+V(K_i-1)]^2<0$, so the root in $0<V<1$ is unique.
+\where{\code{models/vle.py}: \code{bubble\_T}, \code{dew\_T}, \code{flash}; \code{system.py} decides from the
+bubble and dew points whether a mixture is liquid, boiling or vapour.}
+\num{Water + ethanol at 1~atm: 5~mol\,\% ethanol boils at 363.5~K (90.3~$^\circ$C), so it is liquid at
+85~$^\circ$C although pure ethanol boils at 78~$^\circ$C; the azeotrope is found at $x=0.90$ where bubble and dew
+points meet (351.28~K). Flash of $z=0.3$ at 355~K: $V=0.114$, $x_{\mathrm{EtOH}}=0.265$,
+$y_{\mathrm{EtOH}}=0.570$. Bubble points of 409 measured points from 24 papers: 0.26~K (ethanol) and
+0.47~K (methanol) mean error.}
+\notused{Kay's rule (slide 3), Huron--Vidal and Wong--Sandler mixing rules (slide 15), SAFT and multi-fluid
+Helmholtz models for mixtures (slides 18--22).}
+
+%=====================================================================================================
+\section{The calculus and numerics behind the engine}
+\begin{itemize}
+\item \textbf{Chain rule for the apparent heat capacity.} With $H=H(T,\mathbf n(T))$:
+$\dfrac{dH}{dT}=\underbrace{\sum n_i^pC_{p,i}^p}_{\text{ideal}}+\underbrace{\sum n^pC_p^{E,p}}_{\text{excess}}
++\underbrace{\sum_{i,p}\frac{\partial H}{\partial n_i^p}\frac{dn_i^p}{dT}}_{\text{latent}}$.
+Latent heat enters only through the last term, so it is counted once
+(\code{system.py}: \code{cp\_frozen}, \code{cp\_point}).
+\item \textbf{Kirchhoff's law (path independence).} $H_L(T)=\int_{T_m}^TC_{p,L}\,dT$,
+$H_S(T)=-\Delta H_{fus}+\int_{T_m}^TC_{p,S}\,dT$, so $H_L-H_S=\Delta H_{fus}+\int_{T_m}^T\Delta C_p\,dT$: the
+latent heat released below $T_m$ is smaller when $\Delta C_p>0$ (\code{models/pure.py}).
+\item \textbf{Solid--liquid equilibrium.} $\ln(x_k\gamma_k)=-\frac{\Delta H_{fus}}{R}\big(\frac1T-\frac1{T_m}\big)
++\frac{\Delta C_p}{R}\big(\frac{T_m}T-1-\ln\frac{T_m}T\big)$ from $\mu_k^{solid}=\mu_k^{liquid}$ and
+Gibbs--Helmholtz with a constant $\Delta C_p$ (\code{models/phase\_change.py}).
+\item \textbf{Smoothed melting of a pure component.} Melted fraction
+$f(T)=\tfrac12[1+\mathrm{erf}((T-T_m)/\sigma\sqrt2)]$, the cumulative distribution of a Gaussian; $f'(T)$ has
+area exactly 1, so the area of the latent peak is $n\,\Delta H_{fus}$ (plus a $\tfrac12\sigma^2\,d\Delta
+C_p/dT$ correction). The width is a modelling choice; interval means are independent of it.
+\item \textbf{Central differences.} $f'(x)\approx[f(x+h)-f(x-h)]/2h$ with error $h^2f'''/6$ (Taylor series);
+used for $C_p^E$, the latent term and $C_p^R$. Checked: the finite difference of $H(T)$ converges to the
+reported $C_p$ as $\Delta T^2$.
+\item \textbf{Gauss--Legendre quadrature with a change of variable.} $\int_{P_0}^{P}f\,dp=\frac{P-P_0}{2}\sum_k
+w_kf\big(\tfrac{P+P_0}2+\tfrac{P-P_0}2\xi_k\big)$: the factor $(P-P_0)/2$ is the Jacobian. Eight nodes reproduce
+the closed-form Tait integral to $10^{-12}$ (relative).
+\item \textbf{Energy conservation as a check.} $\int_{T_1}^{T_2}C_{p,\mathrm{app}}\,dT=H(T_2)-H(T_1)$ holds to
+$10^{-7}$ or better through melting, crystallisation and boiling.
+\end{itemize}
+
+%=====================================================================================================
+\section{Summary: concept $\to$ code $\to$ check}
+\begin{longtable}{>{\raggedright}p{4.6cm} >{\raggedright}p{5.0cm} >{\raggedright\arraybackslash}p{5.6cm}}
+\toprule
+Lecture concept & Where in the code & How it is checked\\
+\midrule\endhead
+First law, $\Delta H=Q+W_s$, $\Delta U=Q+W$ & \code{rules.py} & Route~B equals Route~A to $<10^{-6}$\,\% (7 systems)\\
+$C_p=T(\partial S/\partial T)_P$ & \code{rules.py} (\code{cp\_from\_dS}) & Entropy route gives 4184.8 for water\\
+$C_p-C_V=Tv\alpha^2/\kappa_T$ & \code{models/cv\_cp.py} & NIST $c_V$: 0.02\,\%\\
+Postulate I ($n+2$) & \code{solver.py} (missing inputs) & Tests in \code{tests/test\_solver.py}\\
+Partial molar properties, Euler & \code{models/partial\_molar.py} & $\sum x_i\bar C_{p,i}=C_p$\\
+Gibbs--Duhem & \code{partial\_molar.py} & Residual $10^{-11}$\\
+Ideal solution, mixing functions & \code{models/ideal.py}, \code{partial\_molar.py} & Exact reduction tests\\
+$G^E$, $\gamma$, Gibbs--Helmholtz, $C_p^E$ & \code{models/nrtl.py} & Measured $H^E$ and $C_p$ (held-out tests)\\
+Fugacity, Lewis--Randall, Henry & \code{models/vle.py} & Bubble points; $\gamma^\infty$\\
+Virial EOS, Abbott $B$ & \code{models/eos.py} & Slide 30 value reproduced\\
+Cubic EOS, roots, $P^{sat}$ & \code{models/eos.py} & Slide 33 table reproduced\\
+Departure functions $H^R$, $C_p^R$ & \code{models/eos.py}, \code{system.py} & NIST vapour $c_p$; two-route check of $H^R$\\
+Mixing/combining rules, $\hat\phi_i$ & \code{models/eos.py} & Slides 23--24 reproduced\\
+$\phi$--$\phi$ bubble pressure, $k_{ij}$ & \code{CubicEOS.bubble\_P} & Slide 26 reproduced\\
+$\gamma$--$\phi$ VLE, Rachford--Rice & \code{models/vle.py} & 409 measured bubble points\\
+\bottomrule
+\end{longtable}
+
+\section{Questions to prepare}
+\begin{enumerate}
+\item Derive $\Delta H=Q+W_s$ at constant pressure from the first law. Which work term disappears, and why?
+\item Why is the apparent heat capacity defined as $dH/dT$ and not as a weighted average of $C_p$'s?
+\item Show that an ideal solution has $C_p=\sum x_iC_{p,i}$.
+\item Prove Euler's theorem for partial molar properties; then show that $\sum x_i\bar C_{p,i}=C_p$.
+\item Derive $H^E=-RT^2\,\partial(G^E/RT)/\partial T$ and $C_p^E$ from it. Why do VLE-fitted parameters give a
+poor $C_p^E$?
+\item Derive $(\partial C_p/\partial P)_T=-T(\partial^2V/\partial T^2)_P$. What is it for an ideal gas?
+\item With $Z=1+BP/RT$, derive $C_p^R=-TP\,d^2B/dT^2$.
+\item Which root of the cubic is the vapour? Why is the middle root discarded?
+\item Why do vdW and RK fail for vapour pressures while SRK and PR do not?
+\item What is the Lewis--Randall rule, and when does $\delta_{12}=0$ reproduce it?
+\item Why $\gamma$--$\phi$ and not $\phi$--$\phi$ for water + ethanol?
+\item Derive the Rachford--Rice equation. Why is its root unique?
+\item A 5\,\% ethanol solution at 85~$^\circ$C: liquid or vapour? How do you know?
+\item Which postulate tells you how many inputs Route~A needs?
+\item Is your apparent heat capacity an equilibrium property? What does that exclude?
+\end{enumerate}
+
+\end{document}

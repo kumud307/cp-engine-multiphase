@@ -89,3 +89,44 @@ def test_pcm_energy_still_conserved_after_tail_cut(engine):
                          epsrel=1e-11)[0]
     assert val == pytest.approx(s.enthalpy(312.0) - s.enthalpy(290.0), rel=1e-8)
     assert math.isfinite(val)
+
+
+# ---------------------------------------------------------------------------
+# Pre-demo robustness fixes (12 Nov 2026)
+# ---------------------------------------------------------------------------
+def test_mean_report_consolidates_range_warnings():
+    """A mean over an interval must not print one range warning per quadrature point."""
+    r = CpEngine().solve({"T1": "-15 C", "T2": "5 C", "mass_fractions": {"water": 0.9, "ethanol": 0.1}})
+    assert r.success and len(r.warnings) < 10
+    assert any("largest extrapolation" in w for w in r.warnings)
+    assert len(str(r).splitlines()) < 80
+
+
+def test_non_positive_cp_is_flagged():
+    r = CpEngine().solve({"T1": "20 C", "T2": "30 C", "total_mass": "2 kg", "process": "constant_P", "Q": "-83.7 kJ"})
+    assert r.cp_mass < 0 and "not positive" in r.warnings[0]
+
+
+def test_composition_given_as_list_is_a_clean_error():
+    r = CpEngine().solve({"T": "25 C", "components": ["water", "ethanol"], "mass_fractions": [0.5, 0.5]})
+    assert not r.success and "must be a dict" in r.errors[0]
+
+
+def test_near_critical_gas_is_warned():
+    r = CpEngine().solve({"T": "300 C", "P": "50 bar", "components": ["n-hexane"]})
+    assert r.success and any("critical point" in w for w in r.warnings)
+    r = CpEngine().solve({"T": "500 C", "P": "100 bar", "components": {"water": "gas"}})
+    assert not any("critical point" in w for w in r.warnings)
+
+
+def test_report_prints_on_a_legacy_code_page():
+    """print(result) must not fail when stdout is redirected on Windows (cp1252)."""
+    import subprocess
+    import sys
+    code = ("from cp_engine import CpEngine; "
+            "print(CpEngine().solve({'T': '25 C', 'mole_fractions': {'ethanol': 0.3, 'water': 0.7}}))")
+    env = {k: v for k, v in __import__("os").environ.items() if k not in ("PYTHONIOENCODING", "PYTHONUTF8")}
+    env["PYTHONIOENCODING"] = "cp1252"
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, env=env,
+                         cwd=str(__import__("pathlib").Path(__file__).resolve().parents[1]))
+    assert out.returncode == 0, out.stderr.decode(errors="replace")[-400:]

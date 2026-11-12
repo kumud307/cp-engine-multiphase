@@ -337,6 +337,9 @@ def _composition(d: dict, db: Database, out: NormalisedInput, T_ref: float | Non
             return                                   # no composition at all (calorimetric routes only)
     else:
         given_key = given[0] if given else None
+        if given_key and not isinstance(d[given_key], dict):
+            raise InputError(f"{given_key} must be a dict of component: value, e.g. "
+                             f"{{'water': 0.6, 'ethanol': 0.4}}; got {type(d[given_key]).__name__}.")
         comp_dict = dict(d[given_key]) if given_key else {}
 
     # names expected in the fraction dict (listed components not in phi)

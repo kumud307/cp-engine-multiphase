@@ -1,0 +1,250 @@
+<title>Cp Engine Pitch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* A run sheet: a time rail on the left, what to say and what to show on the right.
+   Same palette as the Concept Guide (graph-paper neutral, steam blue, ochre for numbers to quote). */
+:root {
+  --bg: #f2f5f3; --paper: #fbfcfb; --ink: #1b2a2f; --ink-soft: #4a5b61; --rule: #d5dedb;
+  --accent: #23668a; --accent-soft: #e2eef4; --num: #8a5512; --num-soft: #f6ead6; --muted: #7a8b8f;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11181a; --paper: #172124; --ink: #e2e9e8; --ink-soft: #aebcbe; --rule: #2a383b;
+    --accent: #7db6d3; --accent-soft: #1d3440; --num: #e3a95d; --num-soft: #33281a; --muted: #8a9b9e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11181a; --paper: #172124; --ink: #e2e9e8; --ink-soft: #aebcbe; --rule: #2a383b;
+  --accent: #7db6d3; --accent-soft: #1d3440; --num: #e3a95d; --num-soft: #33281a; --muted: #8a9b9e;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.58;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.eyebrow { font-family: var(--display); text-transform: uppercase; letter-spacing: .09em; font-size: 13px; color: var(--accent); font-weight: 600; }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 5vw, 44px); line-height: 1.08; margin: 6px 0 8px; text-wrap: balance; }
+.lede { color: var(--ink-soft); margin: 0; max-width: 68ch; }
+h2 { font-family: var(--display); font-size: 26px; font-weight: 700; margin: 16px 0 0; border-bottom: 2px solid var(--ink); padding-bottom: 6px; text-wrap: balance; }
+h2 small { display: block; font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: .03em; }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card p { margin: 0; max-width: 72ch; }
+.beat { display: grid; grid-template-columns: 96px 1fr; gap: 0 16px; }
+.beat > .t { font-family: var(--mono); font-size: 14px; color: var(--accent); padding-top: 18px; border-top: 2px solid var(--accent); }
+.beat > .t b { display: block; font-family: var(--display); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+h3 { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 0; text-wrap: balance; }
+.say { border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; }
+.lab { font-family: var(--display); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; font-weight: 600; color: var(--muted); display: block; }
+.num { background: var(--num-soft); border-left: 3px solid var(--num); padding: 8px 12px; border-radius: 0 4px 4px 0; }
+.num .lab { color: var(--num); }
+code { font-family: var(--mono); font-size: 14px; background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+pre { font-family: var(--mono); font-size: 13.5px; background: var(--accent-soft); padding: 10px 12px; border-radius: 4px; margin: 0; overflow-x: auto; line-height: 1.45; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--display); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+details { border-top: 1px dashed var(--rule); padding-top: 8px; }
+details:first-child { border-top: 0; padding-top: 0; }
+summary { cursor: pointer; font-family: var(--display); font-weight: 600; color: var(--accent); font-size: 16.5px; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details p { margin: 6px 0 0; }
+ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 5px; }
+footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--rule); padding-top: 14px; }
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  .beat { grid-template-columns: 1fr; gap: 8px; }
+  .beat > .t { padding-top: 8px; }
+  .beat > .t b { display: inline; margin-right: 8px; }
+}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">CL 202 · Topic 5 · Pitch day run sheet</div>
+  <h1>Cp Engine: five-minute pitch</h1>
+  <p class="lede">What to say, what to show on screen and which number to point at, minute by minute. The second
+  half is the answer sheet for “which lecture concepts did you use?”. Every number below is what
+  <code>python pitch_demo.py</code> prints on this laptop.</p>
+</header>
+
+<section class="card">
+  <h3>Before you walk in</h3>
+  <ul>
+    <li>Open a terminal in the project folder, activate the environment (<code>.venv\Scripts\activate</code>) and run <code>python pitch_demo.py</code> once. It takes about 5 seconds and needs no internet. Leave the output on screen and scroll during the pitch.</li>
+    <li>Make the terminal font large (Ctrl + scroll) and the window full width, so the long input lines don't wrap.</li>
+    <li>Keep a second terminal ready for a live request: <code>python -m cp_engine</code> asks for components and temperature one at a time.</li>
+    <li>If the professor wants the full report of one case: <code>python pitch_demo.py 4 full</code>.</li>
+    <li>Have the validation table open in a tab: <code>validation/results/summary.md</code>.</li>
+  </ul>
+</section>
+
+<h2>The five minutes<small>About 620 spoken words. Demos 1, 2, 4 and 6 get full sentences; 3 and 5 get one line each.</small></h2>
+
+<div class="beat"><div class="t"><b>Opening</b>0:00 – 0:35</div>
+<section class="card">
+  <div class="say"><span class="lab">Say</span>
+  <p>“Our topic is the specific heat of multiphase fluids. The usual shortcut is to average the heat capacities of
+  the components. That fails exactly where it matters: when liquids mix non-ideally, and when a phase is melting or
+  boiling. So our engine never averages. It builds the enthalpy of the whole system as a state function and
+  differentiates it: C<sub>p</sub> = (∂H/∂T)<sub>P</sub>. Everything from the course enters through H. You can give
+  it a composition and a temperature, or a calorimeter measurement, or an entropy change, and it finds every route
+  to C<sub>p</sub> that your inputs allow.”</p></div>
+</section></div>
+
+<div class="beat"><div class="t"><b>Demo 1</b>0:35 – 1:15</div>
+<section class="card">
+  <h3>Water, three independent routes</h3>
+  <div class="say"><span class="lab">Say</span>
+  <p>“Start simple. Water at 25 °C from property data: 4184.5. Now ignore the database and use the first law:
+  83.7 kJ heats 2 kg by 10 K at constant pressure, so ΔH = Q, and C<sub>p</sub> = 4185. Third route, from the
+  entropy change, C<sub>p</sub> = ΔS / (m ln T₂/T₁): 4184.7. Three routes from Chapter 1 agree. And if I give too
+  little, it tells me what is missing. That is Postulate I: n + 2 properties fix the state.”</p></div>
+  <div class="num"><span class="lab">Point at</span>4,184.5 · 4,185.0 · 4,184.7 J/(kg K); C<sub>v</sub> = 4,141.1 from C<sub>p</sub> − C<sub>v</sub> = Tvα²/κ<sub>T</sub></div>
+</section></div>
+
+<div class="beat"><div class="t"><b>Demo 2</b>1:15 – 2:00</div>
+<section class="card">
+  <h3>Ethanol + water: the ideal-solution rule is 18 % low</h3>
+  <div class="say"><span class="lab">Say</span>
+  <p>“30 mol % ethanol in water. The ideal-solution rule, Σ x<sub>i</sub>C<sub>p,i</sub>, gives 86.5 J/(mol K). The
+  real value is 104.8. The difference is the excess heat capacity, which we get from the NRTL excess Gibbs energy
+  with the Gibbs–Helmholtz equation: H<sup>E</sup> = −RT² ∂(G<sup>E</sup>/RT)/∂T, and C<sub>p</sub><sup>E</sup> is its
+  temperature derivative. The engine also reports partial molar heat capacities, and Euler's theorem holds:
+  0.3 × 138.85 + 0.7 × 90.22 gives back 104.81.”</p></div>
+  <div class="num"><span class="lab">Point at</span>ideal 86.47 → real 104.81 J/(mol K); C<sub>p</sub><sup>E</sup> = 18.33; partial molar 138.85 (ethanol), 90.22 (water)</div>
+</section></div>
+
+<div class="beat"><div class="t"><b>Demo 3</b>2:00 – 2:20</div>
+<section class="card">
+  <h3>Nanofluid: mass weighting, not volume weighting</h3>
+  <div class="say"><span class="lab">Say</span>
+  <p>“For alumina particles in water, enthalpy adds over phases, so the weights must be mass fractions. The
+  volume-weighted formula found in many nanofluid papers is 9.5 % off here. Against measured data our error is 2.1 %.”</p></div>
+  <div class="num"><span class="lab">Point at</span>3,697.3 vs 4,048.1 J/(kg K) (+9.5 %)</div>
+</section></div>
+
+<div class="beat"><div class="t"><b>Demo 4</b>2:20 – 3:05</div>
+<section class="card">
+  <h3>Ice slurry: the multiphase case</h3>
+  <div class="say"><span class="lab">Say</span>
+  <p>“This is the core of the topic. 10 wt % ethanol in water at −5 °C is a slurry of ice in solution. Its apparent
+  C<sub>p</sub> is 52,800 J/(kg K), thirteen times liquid water, because ice melts as the temperature rises. The
+  breakdown shows it: 3,600 ideal, 270 excess, 48,900 latent. The latent term is the chain rule: ∂H/∂n times dn/dT,
+  with the ice amount from solid–liquid equilibrium, equal chemical potentials. For an energy balance you use the
+  mean over the interval: 14,100 from −15 to +5 °C. And the integral of our C<sub>p</sub> equals ΔH to seven digits,
+  so no latent heat is lost or counted twice.”</p></div>
+  <div class="num"><span class="lab">Point at</span>52,783.6 J/(kg K) = 3,616 ideal + 270 excess + 48,898 latent; interval mean 14,086.2</div>
+</section></div>
+
+<div class="beat"><div class="t"><b>Demo 5</b>3:05 – 3:30</div>
+<section class="card">
+  <h3>Steam at 500 °C and 100 bar: equations of state</h3>
+  <div class="say"><span class="lab">Say</span>
+  <p>“Gases at pressure are not ideal. Steam at 100 bar: the ideal gas gives 2131, NIST says 2583. Adding the
+  residual heat capacity from the virial equation gives 2469, from Peng–Robinson 2496. That is the departure
+  function from the equation-of-state lectures, C<sub>p</sub> = C<sub>p</sub><sup>ig</sup> + C<sub>p</sub><sup>R</sup>.”</p></div>
+  <div class="num"><span class="lab">Point at</span>ideal 2,130.9 → virial 2,469.3 → PR 2,496.4; NIST 2,583 (error 17.5 % → 3.4 %)</div>
+</section></div>
+
+<div class="beat"><div class="t"><b>Demo 6</b>3:30 – 4:10</div>
+<section class="card">
+  <h3>A mixture that boils</h3>
+  <div class="say"><span class="lab">Say</span>
+  <p>“Ethanol boils at 78 °C, but 5 % ethanol in water at 85 °C is still liquid, because a mixture boils at its
+  bubble point, here 90.3 °C. We find that from equal fugacities: NRTL activity coefficients for the liquid,
+  Peng–Robinson fugacity coefficients for the vapour. At 82 °C the 30 % mixture is inside its boiling range: the
+  engine solves the Rachford–Rice flash and the apparent C<sub>p</sub> jumps to 318,000 because liquid is
+  evaporating. At 120 °C it is all vapour: 1834. We checked 409 measured bubble points: 0.26 K average error.”</p></div>
+  <div class="num"><span class="lab">Point at</span>4,307.7 (liquid) · 317,793 (boiling, two phases) · 1,833.7 (vapour)</div>
+</section></div>
+
+<div class="beat"><div class="t"><b>Close</b>4:10 – 5:00</div>
+<section class="card">
+  <h3>Evidence and limits</h3>
+  <div class="say"><span class="lab">Say</span>
+  <p>“How do we know it is right? All validation is against published data, nothing invented: pure liquids within
+  0.33 % of NIST, nanofluids 2.1 %, water + methanol heat capacity 2.7 % on data the model never saw. Our code
+  reproduces the lecture's own CO₂ examples to the second decimal. There are 201 automated tests and a separate
+  audit of 82 independent checks. The limits: the system must be in equilibrium, so supercooling is not described;
+  emulsions and PCM slurries are checked for energy conservation but not against experiments; and the database has
+  13 components, although a new one needs only data, no code. And wrong input gets an explanation, never a crash
+  <em>(scroll to Demo 7)</em>. Thank you.”</p></div>
+</section></div>
+
+<h2>Which lecture concepts did you use?<small>The answer sheet. One line each: concept → where it is → the number that proves it.</small></h2>
+
+<section class="card">
+  <div class="say"><span class="lab">The 20-second answer</span>
+  <p>“From Chapter 1: the first law at constant pressure and constant volume, entropy as a state function, and
+  Postulate I. From Chapter 4: partial molar properties, Gibbs–Duhem, the ideal solution, excess functions with
+  activity coefficients, Gibbs–Helmholtz, and fugacity. From the equation-of-state lectures: the virial and cubic
+  equations, departure functions, mixing rules, fugacity coefficients, and vapour–liquid equilibrium with the flash.
+  Each one is a function in our code and has a test.”</p></div>
+</section>
+
+<section class="card">
+<div class="tablewrap"><table>
+  <thead><tr><th>Lecture</th><th>Concept</th><th>What it does in the engine</th><th>File</th><th>Number to quote</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="5">Ch 1<br>Basics</td><td>First law, ΔH = Q + W<sub>s</sub> at constant P; ΔU = Q + W at constant V</td><td>Route B: C<sub>p</sub> from a calorimeter measurement</td><td><code>rules.py</code></td><td class="n">4185.0</td></tr>
+    <tr><td>Entropy, C<sub>p</sub> = T(∂S/∂T)<sub>P</sub></td><td>Route C: C<sub>p</sub> = ΔS/(m ln T₂/T₁)</td><td><code>rules.py</code></td><td class="n">4184.7</td></tr>
+    <tr><td>Maxwell relations, C<sub>p</sub> − C<sub>v</sub> = Tvα²/κ<sub>T</sub></td><td>Converts between C<sub>v</sub> and C<sub>p</sub></td><td><code>models/cv_cp.py</code></td><td class="n">c<sub>v</sub> 4141.1 (NIST: 0.02 %)</td></tr>
+    <tr><td>Postulate I (n + 2 properties)</td><td>Decides whether the inputs are enough; lists what is missing</td><td><code>solver.py</code></td><td>Demo 1, last case</td></tr>
+    <tr><td>Equilibrium states, quasi-static process</td><td>Phase amounts are equilibrium amounts at every T</td><td><code>system.py</code></td><td>limit: no supercooling</td></tr>
+
+    <tr><td rowspan="6">Ch 4<br>Mixtures</td><td>Partial molar properties, Euler's theorem</td><td>Partial molar C<sub>p</sub> in every solution result</td><td><code>models/partial_molar.py</code></td><td class="n">138.85, 90.22 → 104.81</td></tr>
+    <tr><td>Gibbs–Duhem</td><td>Consistency test of the activity model</td><td><code>partial_molar.py</code></td><td class="n">residual 1.4×10⁻¹¹</td></tr>
+    <tr><td>Ideal solution, ΔH<sub>mix</sub><sup>ID</sup> = 0</td><td>Base case: Σ x<sub>i</sub>C<sub>p,i</sub>; mass weighting for suspensions</td><td><code>models/ideal.py</code></td><td class="n">86.47 (ideal)</td></tr>
+    <tr><td>Excess functions, activity coefficients (we use NRTL where the slides use Margules)</td><td>G<sup>E</sup> of the liquid</td><td><code>models/nrtl.py</code></td><td class="n">H<sup>E</sup> = −717 J/mol</td></tr>
+    <tr><td>Gibbs–Helmholtz</td><td>H<sup>E</sup> and C<sub>p</sub><sup>E</sup> from G<sup>E</sup></td><td><code>models/nrtl.py</code></td><td class="n">C<sub>p</sub><sup>E</sup> = 18.33</td></tr>
+    <tr><td>Fugacity, Lewis–Randall, Henry's law (γ<sup>∞</sup>)</td><td>Phase equilibrium; γ<sup>∞</sup> used to test the parameters</td><td><code>models/vle.py</code></td><td class="n">bubble points 0.26 K</td></tr>
+
+    <tr><td rowspan="4">EOS<br>Pure fluids</td><td>Virial equation, Pitzer/Abbott B</td><td>Residual C<sub>p</sub><sup>R</sup> = −TP d²B/dT²</td><td><code>models/eos.py</code></td><td class="n">B(CO₂, 350 K) = −83.73 cm³/mol = slide</td></tr>
+    <tr><td>Cubic equations: vdW, RK, SRK, PR; roots of Z</td><td>Vapour Z, ln φ, H<sup>R</sup>, saturation pressure</td><td><code>models/eos.py</code></td><td class="n">P<sup>sat</sup>(CO₂, 280 K, PR) = 41.60 bar = slide 33</td></tr>
+    <tr><td>Departure (residual) functions</td><td>C<sub>p</sub> = C<sub>p</sub><sup>ig</sup> + C<sub>p</sub><sup>R</sup> for gases</td><td><code>eos.py</code>, <code>system.py</code></td><td class="n">steam 2496 (NIST 2583)</td></tr>
+    <tr><td>(∂H/∂P)<sub>T</sub> = v − T(∂v/∂T)<sub>P</sub></td><td>Pressure correction of liquid C<sub>p</sub> (Tait equation)</td><td><code>database.py</code></td><td class="n">4056 at 500 bar (NIST 4060)</td></tr>
+
+    <tr><td rowspan="4">EOS<br>Mixtures</td><td>Mixing and combining rules, k<sub>ij</sub></td><td>a, b, B of a gas mixture</td><td><code>models/eos.py</code></td><td class="n">B₁₂ = −46.98 (slide: −47.0)</td></tr>
+    <tr><td>Fugacity coefficient in a mixture, φ̂<sub>i</sub></td><td>Vapour side of the equilibrium</td><td><code>models/eos.py</code></td><td class="n">φ̂(CO₂) = 0.947 = slide 24</td></tr>
+    <tr><td>φ–φ bubble pressure</td><td>Reproduces the lecture's CO₂ + CH₄ example</td><td><code>CubicEOS.bubble_P</code></td><td class="n">18.6 % CH₄ = slide 26</td></tr>
+    <tr><td>γ–φ equilibrium, bubble and dew points, Rachford–Rice flash</td><td>Decides liquid / boiling / vapour; gives the latent term</td><td><code>models/vle.py</code></td><td class="n">5 % ethanol boils at 90.3 °C</td></tr>
+  </tbody></table></div>
+  <p><b>Not used, say so if asked:</b> heat engines and the Carnot cycle (only their result, entropy as a state
+  function); Kay's rule; Huron–Vidal and Wong–Sandler mixing rules; SAFT and multiparameter equations.</p>
+</section>
+
+<h2>If the professor interrupts<small>Short answers. Longer derivations are in the Concept Guide and the handbook.</small></h2>
+<section class="card">
+  <details><summary>Why differentiate H instead of averaging heat capacities?</summary>
+    <p>An average misses the excess enthalpy and the change of phase amounts with temperature. dH/dT contains both and guarantees ∫C<sub>p</sub>dT = ΔH. The ice slurry is the proof: 52.8 against about 3.9 kJ/(kg K) for the average.</p></details>
+  <details><summary>Where does the latent heat enter?</summary>
+    <p>Chain rule: dH/dT = Σ n C<sub>p</sub> (ideal) + n C<sub>p</sub><sup>E</sup> (excess) + Σ (∂H/∂n)(dn/dT) (latent). Only the last term carries it, so it is counted once.</p></details>
+  <details><summary>Why NRTL and not Margules as in the lecture?</summary>
+    <p>Same framework (G<sup>E</sup> → γ → H<sup>E</sup> → C<sub>p</sub><sup>E</sup>). NRTL handles more than two components and has temperature-dependent parameters, which C<sub>p</sub><sup>E</sup> needs because it is a second temperature derivative of G<sup>E</sup>.</p></details>
+  <details><summary>Where did the NRTL parameters come from?</summary>
+    <p>We fitted them to measured excess enthalpies. Parameters from vapour–liquid data give C<sub>p</sub><sup>E</sup> six or more times too small, because they fix G<sup>E</sup> but not its curvature in T. Boiling uses a separate set fitted to bubble points; one joint set doubled the C<sub>p</sub> error, so we kept two and say so.</p></details>
+  <details><summary>Why Peng–Robinson only for the vapour?</summary>
+    <p>Cubic equations give liquid volumes 5–20 % off and worse caloric properties. Liquids use measured C<sub>p</sub> correlations; the cubic is used where it is good.</p></details>
+  <details><summary>Why γ–φ and not one equation of state for both phases?</summary>
+    <p>Water + alcohols are strongly polar and associating; no constant k<sub>ij</sub> fits both phases. The activity model fits the liquid to 0.26 K in bubble point.</p></details>
+  <details><summary>The C<sub>p</sub> at the melting point is huge. Is that physical?</summary>
+    <p>A pure substance has an infinite C<sub>p</sub> at T<sub>m</sub>. We smooth the step over a small width, so the point value depends on that width and the engine warns. The latent heat and the interval mean do not depend on it; use those.</p></details>
+  <details><summary>What can it not do?</summary>
+    <p>Non-equilibrium states (supercooling, hysteresis), reacting systems, electrolytes beyond NaCl, and the near-critical region, where it now prints a warning. Emulsions and PCM slurries are not validated against experiments.</p></details>
+  <details><summary>Can you run my example?</summary>
+    <p>Yes: <code>python -m cp_engine</code>, type the components and T. Components available: water, ethanol, methanol, glycerol, acetone, n-hexane, toluene, n-dodecane, n-octadecane, Al2O3, CuO, SiO2, NaCl. For anything else, say “that needs a data entry in <code>data/components.json</code>; no code changes”.</p></details>
+</section>
+
+<footer>Numbers from <code>pitch_demo.py</code>, run on 12 Nov 2026 after the pre-pitch fixes (201 tests and 82 audit checks pass).
+Validation figures from <code>validation/results/summary.md</code>.</footer>
+</div>

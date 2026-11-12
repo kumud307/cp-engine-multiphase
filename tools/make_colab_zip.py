@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INCLUDE = ["cp_engine", "data", "validation", "tests", "audit", "notebooks", "docs", "tools", "manuscript", "figures", "pyproject.toml",
-           "requirements.txt", "README.md", "MODEL_VERIFICATION_REPORT.md"]
+           "requirements.txt", "README.md", "pitch_demo.py", "MODEL_VERIFICATION_REPORT.md"]
 SKIP = {"__pycache__", ".ipynb_checkpoints"}
 
 out = ROOT / "cp_engine_project.zip"

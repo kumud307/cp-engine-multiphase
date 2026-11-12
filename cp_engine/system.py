@@ -752,6 +752,17 @@ class SystemModel:
             self._warned.add("eos_note")
             self.log.assume(f"Gas phase: C_p = C_p^ig + C_p^R, residual part from the {self.gas_eos} equation of "
                             "state (critical constants and ω from NIST data; k_ij = 0).")
+        if "critical" not in self._warned:
+            for k in keys:
+                crit = getattr(self.comps[k], "critical", None)
+                if crit is not None and self.P > 0.9 * crit.Pc and 0.9 * crit.Tc < T < 1.5 * crit.Tc:
+                    self._warned.add("critical")
+                    self.log.warn(f"{self.comps[k].name} at {T:.1f} K and {self.P / 1e5:.4g} bar is near or above its "
+                                  f"critical point (Tc = {crit.Tc:.1f} K, Pc = {crit.Pc / 1e5:.1f} bar). Cp varies "
+                                  f"steeply there and a cubic equation of state is not accurate; the {self.gas_eos} "
+                                  "value was validated only up to 10 MPa on superheated vapours, so treat it as an "
+                                  "estimate.")
+                    break
         ref = 0.0
         for k, yi in zip(keys, y):
             if k not in self._hr_ref:

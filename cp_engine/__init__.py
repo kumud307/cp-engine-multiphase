@@ -14,6 +14,17 @@ Quick start
 >>> print(result)            # report: Cp, routes, breakdown, warnings
 >>> print(result.derivation())   # chain of thermodynamic relations used
 """
+import sys as _sys
+
+# Reports contain Greek letters and symbols (α, γ, Δ, °). On Windows, output that is redirected to a file or
+# a pipe uses the legacy code page (cp1252) and print() would raise UnicodeEncodeError. Use UTF-8 instead.
+for _stream in (_sys.stdout, _sys.stderr):
+    try:
+        if _stream is not None and (_stream.encoding or "").lower().replace("-", "") != "utf8":
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError, OSError):   # stream replaced by a notebook or test harness
+        pass
+
 from .database import Database, load_database
 from .errors import CpEngineError, DataError, InputError, PhaseError, RangeError, UnitError
 from .inputs import SystemInput, describe_inputs

@@ -44,9 +44,11 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -e .[dev]
 
-pytest                                   # 196 tests, ~25 s
+pytest                                   # 201 tests, ~25 s
 pytest audit/test_independent.py         # independent audit, 82 checks
-python validation/run_all.py             # all literature comparisons, figures and tables (~25 s)
+python validation/run_all.py             # all literature comparisons, figures and tables (~5 min)
+python pitch_demo.py                     # the 5-minute pitch demo: 7 short demos (~5 s); `python pitch_demo.py 4` runs one,
+                                         # add `full` for the complete report of each case
 python -m cp_engine                      # question-and-answer mode in the terminal
 jupyter notebook notebooks/CP_Engine_Demo.ipynb
 ```
@@ -66,6 +68,11 @@ r.breakdown_table()      # ideal / excess / latent parts
 you to upload `cp_engine_project.zip`, which `python tools/make_colab_zip.py` creates.
 
 ## 3. Demo script (about 10 minutes)
+
+**For the 5-minute pitch** use `python pitch_demo.py` instead of the notebook: it runs seven short demos
+(three routes for water, ethanol + water excess Cp, nanofluid, ice slurry, steam with an equation of state,
+a boiling mixture, wrong inputs) and prints the lecture concept behind each. The spoken script and the
+lecture-concept answers are in `docs/pitch/pitch_5min.html`. The longer notebook walk-through follows.
 
 Run the notebook top to bottom beforehand so all outputs are visible. Then show:
 
